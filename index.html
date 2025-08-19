@@ -904,6 +904,8 @@
                         updatePayload.headSignature = signatureData;
                     } else if (approverType === 'admin') {
                         updatePayload.adminSignature = signatureData;
+                    } else if (approverType === 'substitute') {
+                        updatePayload.substituteSignature = signatureData;
                     }
                 }
                 
@@ -922,7 +924,7 @@
                 
             } catch (error) {
                 console.error('❌ เกิดข้อผิดพลาดในการอัพเดท:', error);
-                showNotification(`เกิดข้อผิดพลาดในการอัพเดท: ${error.message}`, 'error');
+                showNotification('เกิดข้อผิดพลาดในการอัพเดท: ' + error.message, 'error');
                 return false;
             }
         }
@@ -1092,34 +1094,45 @@
                 return;
             }
             
-            container.innerHTML = approvedRecords.map(record => `
-                <div class="border border-gray-300 rounded-lg p-6 bg-gray-50">
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                        <div><strong>วันที่:</strong> ${record.date}</div>
-                        <div><strong>เวลา:</strong> ${record.time}</div>
-                        <div><strong>ชั้น/ห้อง:</strong> ${record.classRoom}</div>
-                        <div><strong>วิชา:</strong> ${record.subject}</div>
-                        <div><strong>ครูประจำ:</strong> ${record.regularTeacher}</div>
-                        <div><strong>ครูสอนแทน:</strong> ${record.substituteTeacher}</div>
-                    </div>
-                    
-                    <div class="border-t pt-4">
-                        <h4 class="font-semibold text-gray-800 mb-4">การมีส่วนร่วมของนักเรียน</h4>
-                        <div class="space-y-4">
-                            <div>
-                                <label class="block text-gray-700 font-medium mb-2">การเข้าเรียน</label>
-                                <input type="text" id="attendance_${record.id}" placeholder="เช่น มา 32 คน ขาด 3 คน" class="w-full border border-gray-300 rounded-lg px-4 py-2">
-                            </div>
-                            <div>
-                                <label class="block text-gray-700 font-medium mb-2">พฤติกรรมการเรียนรู้</label>
-                                <textarea id="behavior_${record.id}" placeholder="เช่น ส่วนใหญ่ให้ความร่วมมือดี / บางส่วนไม่ส่งงาน / มีนักเรียนคุยกันบ้าง" class="w-full border border-gray-300 rounded-lg px-4 py-2 h-24"></textarea>
-                            </div>
-                            <div>
-                                <label class="block text-gray-700 font-medium mb-2">ข้อสังเกต/ปัญหา/ข้อเสนอแนะ</label>
-                                <textarea id="observations_${record.id}" placeholder="เช่น ควรทบทวนเรื่องก่อนหน้า / นักเรียนยังไม่เข้าใจบางส่วน / ควรใช้สื่อเพิ่มเติม" class="w-full border border-gray-300 rounded-lg px-4 py-2 h-24"></textarea>
-                            </div>
-                            <div>
-                                <label class="block text-gray-700 font-medium mb-2">ลายเซ็นครูสอนแทน</label>
+            container.innerHTML = approvedRecords.map(record => 
+                '<div class="border border-gray-300 rounded-lg p-6 bg-gray-50">' +
+                '<div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">' +
+                '<div><strong>วันที่:</strong> ' + record.date + '</div>' +
+                '<div><strong>เวลา:</strong> ' + record.time + '</div>' +
+                '<div><strong>ชั้น/ห้อง:</strong> ' + record.classRoom + '</div>' +
+                '<div><strong>วิชา:</strong> ' + record.subject + '</div>' +
+                '<div><strong>ครูประจำ:</strong> ' + record.regularTeacher + '</div>' +
+                '<div><strong>ครูสอนแทน:</strong> ' + record.substituteTeacher + '</div>' +
+                '</div>' +
+                '<div class="border-t pt-4">' +
+                '<h4 class="font-semibold text-gray-800 mb-4">การมีส่วนร่วมของนักเรียน</h4>' +
+                '<div class="space-y-4">' +
+                '<div>' +
+                '<label class="block text-gray-700 font-medium mb-2">การเข้าเรียน</label>' +
+                '<input type="text" id="attendance_' + record.id + '" placeholder="เช่น มา 32 คน ขาด 3 คน" class="w-full border border-gray-300 rounded-lg px-4 py-2">' +
+                '</div>' +
+                '<div>' +
+                '<label class="block text-gray-700 font-medium mb-2">พฤติกรรมการเรียนรู้</label>' +
+                '<textarea id="behavior_' + record.id + '" placeholder="เช่น ส่วนใหญ่ให้ความร่วมมือดี / บางส่วนไม่ส่งงาน / มีนักเรียนคุยกันบ้าง" class="w-full border border-gray-300 rounded-lg px-4 py-2 h-24"></textarea>' +
+                '</div>' +
+                '<div>' +
+                '<label class="block text-gray-700 font-medium mb-2">ข้อสังเกต/ปัญหา/ข้อเสนอแนะ</label>' +
+                '<textarea id="observations_' + record.id + '" placeholder="เช่น ควรทบทวนเรื่องก่อนหน้า / นักเรียนยังไม่เข้าใจบางส่วน / ควรใช้สื่อเพิ่มเติม" class="w-full border border-gray-300 rounded-lg px-4 py-2 h-24"></textarea>' +
+                '</div>' +
+                '<div>' +
+                '<label class="block text-gray-700 font-medium mb-2">ลายเซ็นครูสอนแทน</label>' +
+                '<div class="border-2 border-yellow-300 rounded-lg p-3 bg-white">' +
+                '<canvas id="substituteSignature_' + record.id + '" class="signature-pad w-full h-32 bg-white rounded" width="600" height="150"></canvas>' +
+                '</div>' +
+                '<button type="button" onclick="clearSignature(\'substituteSignature_' + record.id + '\')" class="mt-2 text-sm bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded">ล้างลายเซ็น</button>' +
+                '</div>' +
+                '</div>' +
+                '<button onclick="submitSubstituteReport(\'' + record.id + '\')" class="mt-4 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg">' +
+                'บันทึกรายงาน' +
+                '</button>' +
+                '</div>' +
+                '</div>'
+            ).join('');block text-gray-700 font-medium mb-2">ลายเซ็นครูสอนแทน</label>
                                 <div class="border-2 border-yellow-300 rounded-lg p-3 bg-white">
                                     <canvas id="substituteSignature_${record.id}" class="signature-pad w-full h-32 bg-white rounded" width="600" height="150"></canvas>
                                 </div>
@@ -1152,52 +1165,50 @@
                 return;
             }
             
-            container.innerHTML = readyForAdmin.map(record => `
-                <div class="border border-gray-300 rounded-lg p-6 bg-gray-50">
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                        <div><strong>วันที่:</strong> ${record.date}</div>
-                        <div><strong>เวลา:</strong> ${record.time}</div>
-                        <div><strong>ชั้น/ห้อง:</strong> ${record.classRoom}</div>
-                        <div><strong>วิชา:</strong> ${record.subject}</div>
-                        <div><strong>ครูประจำ:</strong> ${record.regularTeacher}</div>
-                        <div><strong>ครูสอนแทน:</strong> ${record.substituteTeacher}</div>
-                    </div>
-                    
-                    <div class="mb-4">
-                        <strong>รายงานครูสอนแทน:</strong>
-                        <div class="mt-2 p-4 bg-white rounded border">
-                            <div><strong>การเข้าเรียน:</strong> ${record.substituteReport.attendance}</div>
-                            <div><strong>พฤติกรรม:</strong> ${record.substituteReport.behavior}</div>
-                            <div><strong>ข้อสังเกต:</strong> ${record.substituteReport.observations}</div>
-                        </div>
-                    </div>
-                    
-                    <div class="border-t pt-4">
-                        <div class="mb-4">
-                            <label class="block text-gray-700 font-medium mb-2">การพิจารณาสุดท้าย</label>
-                            <select id="adminDecision_${record.id}" class="w-full border border-gray-300 rounded-lg px-4 py-2">
-                                <option value="">เลือกการพิจารณา</option>
-                                <option value="approved">อนุมัติ</option>
-                                <option value="rejected">ไม่อนุมัติ</option>
-                            </select>
-                        </div>
-                        <div class="mb-4">
-                            <label class="block text-gray-700 font-medium mb-2">เหตุผลประกอบ</label>
-                            <textarea id="adminReason_${record.id}" class="w-full border border-gray-300 rounded-lg px-4 py-2 h-20" placeholder="ระบุเหตุผลประกอบ"></textarea>
-                        </div>
-                        <div class="mb-4">
-                            <label class="block text-gray-700 font-medium mb-2">ลายเซ็นรองกลุ่มบริหารวิชาการ</label>
-                            <div class="border-2 border-purple-300 rounded-lg p-3 bg-white">
-                                <canvas id="adminSignature_${record.id}" class="signature-pad w-full h-32 bg-white rounded" width="600" height="150"></canvas>
-                            </div>
-                            <button type="button" onclick="clearSignature('adminSignature_${record.id}')" class="mt-2 text-sm bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded">ล้างลายเซ็น</button>
-                        </div>
-                        <button onclick="approveRecord('${record.id}', 'admin')" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg">
-                            บันทึกการพิจารณา
-                        </button>
-                    </div>
-                </div>
-            `).join('');
+            container.innerHTML = readyForAdmin.map(record => 
+                '<div class="border border-gray-300 rounded-lg p-6 bg-gray-50">' +
+                '<div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">' +
+                '<div><strong>วันที่:</strong> ' + record.date + '</div>' +
+                '<div><strong>เวลา:</strong> ' + record.time + '</div>' +
+                '<div><strong>ชั้น/ห้อง:</strong> ' + record.classRoom + '</div>' +
+                '<div><strong>วิชา:</strong> ' + record.subject + '</div>' +
+                '<div><strong>ครูประจำ:</strong> ' + record.regularTeacher + '</div>' +
+                '<div><strong>ครูสอนแทน:</strong> ' + record.substituteTeacher + '</div>' +
+                '</div>' +
+                '<div class="mb-4">' +
+                '<strong>รายงานครูสอนแทน:</strong>' +
+                '<div class="mt-2 p-4 bg-white rounded border">' +
+                '<div><strong>การเข้าเรียน:</strong> ' + record.substituteReport.attendance + '</div>' +
+                '<div><strong>พฤติกรรม:</strong> ' + record.substituteReport.behavior + '</div>' +
+                '<div><strong>ข้อสังเกต:</strong> ' + record.substituteReport.observations + '</div>' +
+                '</div>' +
+                '</div>' +
+                '<div class="border-t pt-4">' +
+                '<div class="mb-4">' +
+                '<label class="block text-gray-700 font-medium mb-2">การพิจารณาสุดท้าย</label>' +
+                '<select id="adminDecision_' + record.id + '" class="w-full border border-gray-300 rounded-lg px-4 py-2">' +
+                '<option value="">เลือกการพิจารณา</option>' +
+                '<option value="approved">อนุมัติ</option>' +
+                '<option value="rejected">ไม่อนุมัติ</option>' +
+                '</select>' +
+                '</div>' +
+                '<div class="mb-4">' +
+                '<label class="block text-gray-700 font-medium mb-2">เหตุผลประกอบ</label>' +
+                '<textarea id="adminReason_' + record.id + '" class="w-full border border-gray-300 rounded-lg px-4 py-2 h-20" placeholder="ระบุเหตุผลประกอบ"></textarea>' +
+                '</div>' +
+                '<div class="mb-4">' +
+                '<label class="block text-gray-700 font-medium mb-2">ลายเซ็นรองกลุ่มบริหารวิชาการ</label>' +
+                '<div class="border-2 border-purple-300 rounded-lg p-3 bg-white">' +
+                '<canvas id="adminSignature_' + record.id + '" class="signature-pad w-full h-32 bg-white rounded" width="600" height="150"></canvas>' +
+                '</div>' +
+                '<button type="button" onclick="clearSignature(\'adminSignature_' + record.id + '\')" class="mt-2 text-sm bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded">ล้างลายเซ็น</button>' +
+                '</div>' +
+                '<button onclick="approveRecord(\'' + record.id + '\', \'admin\')" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg">' +
+                'บันทึกการพิจารณา' +
+                '</button>' +
+                '</div>' +
+                '</div>'
+            ).join('');
             
             // Initialize signature pads
             setTimeout(() => {
@@ -1217,20 +1228,20 @@
             
             // Update table
             const tableBody = document.getElementById('recordsTable');
-            tableBody.innerHTML = records.map(record => `
-                <tr>
-                    <td class="border border-gray-300 px-4 py-2">${record.date}</td>
-                    <td class="border border-gray-300 px-4 py-2">${record.classRoom}</td>
-                    <td class="border border-gray-300 px-4 py-2">${record.subject}</td>
-                    <td class="border border-gray-300 px-4 py-2">${record.regularTeacher}</td>
-                    <td class="border border-gray-300 px-4 py-2">${record.substituteTeacher}</td>
-                    <td class="border border-gray-300 px-4 py-2">
-                        <span class="px-2 py-1 rounded text-sm ${getStatusClass(record)}">
-                            ${getStatusText(record)}
-                        </span>
-                    </td>
-                </tr>
-            `).join('');
+            tableBody.innerHTML = records.map(record => 
+                '<tr>' +
+                '<td class="border border-gray-300 px-4 py-2">' + record.date + '</td>' +
+                '<td class="border border-gray-300 px-4 py-2">' + record.classRoom + '</td>' +
+                '<td class="border border-gray-300 px-4 py-2">' + record.subject + '</td>' +
+                '<td class="border border-gray-300 px-4 py-2">' + record.regularTeacher + '</td>' +
+                '<td class="border border-gray-300 px-4 py-2">' + record.substituteTeacher + '</td>' +
+                '<td class="border border-gray-300 px-4 py-2">' +
+                '<span class="px-2 py-1 rounded text-sm ' + getStatusClass(record) + '">' +
+                getStatusText(record) +
+                '</span>' +
+                '</td>' +
+                '</tr>'
+            ).join('');
             
             // Create chart
             createStatsChart(records);
@@ -1368,9 +1379,9 @@
             let signatureData = null;
             
             if (approverType === 'head') {
-                const decision = document.getElementById(`headDecision_${recordId}`).value;
-                const reason = document.getElementById(`headReason_${recordId}`).value;
-                const signature = getSignatureData(`headSignature_${recordId}`);
+                const decision = document.getElementById('headDecision_' + recordId).value;
+                const reason = document.getElementById('headReason_' + recordId).value;
+                const signature = getSignatureData('headSignature_' + recordId);
                 
                 if (!decision || !signature) {
                     showNotification('กรุณาเลือกการพิจารณาและลงลายเซ็น', 'error');
@@ -1391,9 +1402,9 @@
                 signatureData = signature;
                 
             } else if (approverType === 'admin') {
-                const decision = document.getElementById(`adminDecision_${recordId}`).value;
-                const reason = document.getElementById(`adminReason_${recordId}`).value;
-                const signature = getSignatureData(`adminSignature_${recordId}`);
+                const decision = document.getElementById('adminDecision_' + recordId).value;
+                const reason = document.getElementById('adminReason_' + recordId).value;
+                const signature = getSignatureData('adminSignature_' + recordId);
                 
                 if (!decision || !signature) {
                     showNotification('กรุณาเลือกการพิจารณาและลงลายเซ็น', 'error');
@@ -1433,10 +1444,10 @@
         }
 
         async function submitSubstituteReport(recordId) {
-            const attendance = document.getElementById(`attendance_${recordId}`).value;
-            const behavior = document.getElementById(`behavior_${recordId}`).value;
-            const observations = document.getElementById(`observations_${recordId}`).value;
-            const signature = getSignatureData(`substituteSignature_${recordId}`);
+            const attendance = document.getElementById('attendance_' + recordId).value;
+            const behavior = document.getElementById('behavior_' + recordId).value;
+            const observations = document.getElementById('observations_' + recordId).value;
+            const signature = getSignatureData('substituteSignature_' + recordId);
             
             if (!attendance || !behavior || !signature) {
                 showNotification('กรุณากรอกข้อมูลให้ครบถ้วนและลงลายเซ็น', 'error');
