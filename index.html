@@ -884,7 +884,7 @@
         }
 
         // Update record in Google Sheets
-        async function updateRecordInGoogleSheets(recordId, updateData) {
+        async function updateRecordInGoogleSheets(recordId, updateData, signatureData, approverType) {
             if (!appConfig.scriptUrl) {
                 return false;
             }
@@ -893,9 +893,19 @@
                 const updatePayload = {
                     action: 'updateRecord',
                     sheetId: appConfig.sheetId,
+                    folderId: appConfig.folderId,
                     recordId: recordId,
                     updateData: updateData
                 };
+                
+                // เพิ่มลายเซ็นตามประเภทผู้อนุมัติ
+                if (signatureData && approverType) {
+                    if (approverType === 'head') {
+                        updatePayload.headSignature = signatureData;
+                    } else if (approverType === 'admin') {
+                        updatePayload.adminSignature = signatureData;
+                    }
+                }
                 
                 const response = await fetch(appConfig.scriptUrl, {
                     method: 'POST',
@@ -1355,6 +1365,7 @@
             }
             
             let updateData = {};
+            let signatureData = null;
             
             if (approverType === 'head') {
                 const decision = document.getElementById(`headDecision_${recordId}`).value;
@@ -1376,6 +1387,8 @@
                     headReason: reason,
                     headApprovedAt: records[recordIndex].headApprovedAt
                 };
+                
+                signatureData = signature;
                 
             } else if (approverType === 'admin') {
                 const decision = document.getElementById(`adminDecision_${recordId}`).value;
@@ -1399,13 +1412,15 @@
                     adminApprovedAt: records[recordIndex].adminApprovedAt,
                     status: 'completed'
                 };
+                
+                signatureData = signature;
             }
             
             // Save to localStorage
             localStorage.setItem('teachingRecords', JSON.stringify(records));
             
-            // Update Google Sheets
-            await updateRecordInGoogleSheets(recordId, updateData);
+            // Update Google Sheets with signature
+            await updateRecordInGoogleSheets(recordId, updateData, signatureData, approverType);
             
             showNotification('บันทึกการพิจารณาเรียบร้อยแล้ว', 'success');
             
@@ -1449,8 +1464,8 @@
             // Save to localStorage
             localStorage.setItem('teachingRecords', JSON.stringify(records));
             
-            // Update Google Sheets
-            await updateRecordInGoogleSheets(recordId, { substituteReport });
+            // Update Google Sheets with substitute signature
+            await updateRecordInGoogleSheets(recordId, { substituteReport }, signature, 'substitute');
             
             showNotification('บันทึกรายงานเรียบร้อยแล้ว', 'success');
             loadSubstituteRecords();
