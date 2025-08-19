@@ -1059,29 +1059,29 @@
                     <div class="border-t pt-4">
                         <div class="mb-4">
                             <label class="block text-gray-700 font-medium mb-2">การพิจารณา</label>
-                            <select id="headDecision_${record.id}" class="w-full border border-gray-300 rounded-lg px-4 py-2">
-                                <option value="">เลือกการพิจารณา</option>
-                                <option value="approved">อนุมัติ</option>
-                                <option value="rejected">ไม่อนุมัติ</option>
-                            </select>
-                        </div>
-                        <div class="mb-4">
-                            <label class="block text-gray-700 font-medium mb-2">เหตุผล</label>
-                            <textarea id="headReason_${record.id}" class="w-full border border-gray-300 rounded-lg px-4 py-2 h-20" placeholder="ระบุเหตุผล"></textarea>
-                        </div>
-                        <div class="mb-4">
-                            <label class="block text-gray-700 font-medium mb-2">ลายเซ็นหัวหน้าสาระ</label>
-                            <div class="border-2 border-green-300 rounded-lg p-3 bg-white">
-                                <canvas id="headSignature_${record.id}" class="signature-pad w-full h-32 bg-white rounded" width="600" height="150"></canvas>
-                            </div>
-                            <button type="button" onclick="clearSignature('headSignature_${record.id}')" class="mt-2 text-sm bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded">ล้างลายเซ็น</button>
-                        </div>
-                        <button onclick="approveRecord('${record.id}', 'head')" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg">
-                            บันทึกการพิจารณา
-                        </button>
-                    </div>
-                </div>
-            `).join('');
+                            <select id="headDecision_' + record.id + '" class="w-full border border-gray-300 rounded-lg px-4 py-2">' +
+                                '<option value="">เลือกการพิจารณา</option>' +
+                                '<option value="approved">อนุมัติ</option>' +
+                                '<option value="rejected">ไม่อนุมัติ</option>' +
+                            '</select>' +
+                        '</div>' +
+                        '<div class="mb-4">' +
+                            '<label class="block text-gray-700 font-medium mb-2">เหตุผล</label>' +
+                            '<textarea id="headReason_' + record.id + '" class="w-full border border-gray-300 rounded-lg px-4 py-2 h-20" placeholder="ระบุเหตุผล"></textarea>' +
+                        '</div>' +
+                        '<div class="mb-4">' +
+                            '<label class="block text-gray-700 font-medium mb-2">ลายเซ็นหัวหน้าสาระ</label>' +
+                            '<div class="border-2 border-green-300 rounded-lg p-3 bg-white">' +
+                                '<canvas id="headSignature_' + record.id + '" class="signature-pad w-full h-32 bg-white rounded" width="600" height="150"></canvas>' +
+                            '</div>' +
+                            '<button type="button" onclick="clearSignature(\'headSignature_' + record.id + '\')" class="mt-2 text-sm bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded">ล้างลายเซ็น</button>' +
+                        '</div>' +
+                        '<button onclick="approveRecord(\'' + record.id + '\', \'head\')" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg">' +
+                            'บันทึกการพิจารณา' +
+                        '</button>' +
+                    '</div>' +
+                '</div>'
+            ).join('');
             
             // Initialize signature pads for each record
             setTimeout(() => {
