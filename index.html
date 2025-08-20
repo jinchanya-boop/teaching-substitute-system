@@ -503,6 +503,20 @@
         }
 
         function showAdminForm() {
+            // Double check authentication for admin access
+            if (currentUser !== 'admin') {
+                showNotification('คุณไม่มีสิทธิ์เข้าถึงส่วนนี้ กรุณาเข้าสู่ระบบด้วยบัญชีรองกลุ่มบริหาร', 'error');
+                showLogin();
+                return;
+            }
+            
+            // Additional verification prompt
+            var confirmAccess = confirm('ยืนยันการเข้าถึงระบบรองกลุ่มบริหาร\nการดำเนินการในส่วนนี้จะส่งผลต่อการอนุมัติขั้นสุดท้าย');
+            if (!confirmAccess) {
+                backToMenu();
+                return;
+            }
+            
             loadAdminRecords();
             showSection('adminForm');
         }
@@ -967,27 +981,30 @@
                     html += '</div>';
                 }
                 
-                // Add reason input field
-                html += '<div class="mt-4 border-t pt-4">';
-                html += '<label class="block text-gray-700 font-medium mb-2">เหตุผลในการพิจารณา</label>';
-                html += '<textarea id="adminReason_' + record.id + '" rows="2" placeholder="ระบุเหตุผลในการอนุมัติหรือไม่อนุมัติ" ';
-                html += 'class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent mb-3"></textarea>';
+                // Add reason input field with stricter requirements
+                html += '<div class="mt-4 border-t pt-4 bg-red-50 p-4 rounded">';
+                html += '<h5 class="font-semibold text-red-800 mb-2">⚠️ ข้อมูลจำเป็นสำหรับการอนุมัติ</h5>';
+                html += '<label class="block text-gray-700 font-medium mb-2">เหตุผลในการพิจารณา (บังคับกรอก)</label>';
+                html += '<textarea id="adminReason_' + record.id + '" rows="3" placeholder="กรุณาระบุเหตุผลที่ชัดเจนในการอนุมัติหรือไม่อนุมัติ (ข้อมูลนี้จำเป็นและจะถูกบันทึก)" ';
+                html += 'class="w-full border-2 border-red-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-red-500 focus:border-red-500 mb-3" required></textarea>';
+                html += '<p class="text-sm text-red-600">* กรุณากรอกเหตุผลอย่างน้อย 10 ตัวอักษร</p>';
                 html += '</div>';
                 
-                // Add signature area for admin approval
-                html += '<div class="mt-4">';
-                html += '<h5 class="font-medium text-gray-700 mb-2">ลายเซ็นรองกลุ่มบริหาร</h5>';
+                // Add signature area for admin approval with emphasis
+                html += '<div class="mt-4 bg-purple-50 p-4 rounded">';
+                html += '<h5 class="font-semibold text-purple-800 mb-2">📝 ลายเซ็นรองกลุ่มบริหาร (บังคับ)</h5>';
                 html += '<canvas id="adminSignature_' + record.id + '" width="400" height="120" ';
-                html += 'class="signature-pad w-full bg-white rounded cursor-crosshair border-2 border-purple-300 mb-2"></canvas>';
-                html += '<div class="flex space-x-2 mb-4">';
+                html += 'class="signature-pad w-full bg-white rounded cursor-crosshair border-3 border-purple-400 mb-2"></canvas>';
+                html += '<div class="flex space-x-2 mb-2">';
                 html += '<button onclick="clearSignature(\'adminSignature_' + record.id + '\')" ';
                 html += 'class="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600">ลบลายเซ็น</button>';
                 html += '</div>';
+                html += '<p class="text-sm text-purple-600">* ลายเซ็นจำเป็นสำหรับการยืนยันตัวตนและรับผิดชอบการตัดสินใจ</p>';
                 html += '</div>';
                 
-                html += '<div class="mt-4 space-x-2">';
-                html += '<button onclick="finalApproveWithSignature(\'' + record.id + '\')" class="bg-green-600 text-white px-4 py-2 rounded">อนุมัติขั้นสุดท้าย</button>';
-                html += '<button onclick="finalRejectWithSignature(\'' + record.id + '\')" class="bg-red-600 text-white px-4 py-2 rounded">ไม่อนุมัติ</button>';
+                html += '<div class="mt-6 space-x-2">';
+                html += '<button onclick="finalApproveWithSignature(\'' + record.id + '\')" class="bg-green-600 text-white px-6 py-3 rounded font-semibold hover:bg-green-700">✅ อนุมัติขั้นสุดท้าย</button>';
+                html += '<button onclick="finalRejectWithSignature(\'' + record.id + '\')" class="bg-red-600 text-white px-6 py-3 rounded font-semibold hover:bg-red-700">❌ ไม่อนุมัติ</button>';
                 html += '</div>';
                 html += '</div>';
             }
