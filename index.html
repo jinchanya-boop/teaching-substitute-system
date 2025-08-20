@@ -245,7 +245,7 @@
                         </div>
                         <div>
                             <label class="block text-gray-700 font-medium mb-2">เวลา</label>
-                            <input type="time" id="teachingTime" required 
+                            <input type="text" id="teachingTime" required placeholder="เช่น 08:30-09:20 หรือ คาบ 1-2"
                                    class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                         </div>
                     </div>
@@ -303,11 +303,20 @@
 
                     <div>
                         <label class="block text-gray-700 font-medium mb-2">ลายเซ็นครูประจำวิชา</label>
-                        <canvas id="teacherSignaturePad" width="400" height="150" 
-                                class="signature-pad w-full border border-gray-300 rounded-lg"></canvas>
-                        <div class="flex space-x-2 mt-2">
-                            <button type="button" onclick="clearSignature('teacherSignaturePad')" 
-                                    class="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600">ลบลายเซ็น</button>
+                        <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center bg-gray-50">
+                            <canvas id="teacherSignaturePad" width="600" height="200" 
+                                    class="signature-pad w-full bg-white rounded cursor-crosshair border-2 border-blue-300"></canvas>
+                            <div class="flex justify-center space-x-2 mt-3">
+                                <button type="button" onclick="clearSignature('teacherSignaturePad')" 
+                                        class="px-6 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors">
+                                    🗑️ ลบลายเซ็น
+                                </button>
+                                <button type="button" onclick="testSignature()" 
+                                        class="px-6 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors">
+                                    ✏️ ทดสอบเซ็น
+                                </button>
+                            </div>
+                            <p class="text-sm text-gray-500 mt-2">คลิกและลากเพื่อเซ็นชื่อ (รองรับเมาส์และสัมผัส)</p>
                         </div>
                     </div>
 
@@ -649,13 +658,21 @@
             var lastX = 0;
             var lastY = 0;
 
+            // Set better drawing settings
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            ctx.strokeStyle = '#000000';
+            ctx.lineWidth = 3;
+
             function getEventPos(e) {
                 var rect = canvas.getBoundingClientRect();
+                var scaleX = canvas.width / rect.width;
+                var scaleY = canvas.height / rect.height;
                 var clientX = e.clientX || (e.touches ? e.touches[0].clientX : 0);
                 var clientY = e.clientY || (e.touches ? e.touches[0].clientY : 0);
                 return {
-                    x: clientX - rect.left,
-                    y: clientY - rect.top
+                    x: (clientX - rect.left) * scaleX,
+                    y: (clientY - rect.top) * scaleY
                 };
             }
 
@@ -665,6 +682,11 @@
                 lastX = pos.x;
                 lastY = pos.y;
                 canvas.classList.add('drawing');
+                
+                // Start new path
+                ctx.beginPath();
+                ctx.moveTo(pos.x, pos.y);
+                
                 e.preventDefault();
             }
 
@@ -672,22 +694,20 @@
                 if (!isDrawing) return;
                 
                 var pos = getEventPos(e);
-                ctx.beginPath();
-                ctx.moveTo(lastX, lastY);
-                ctx.lineTo(pos.x, pos.y);
-                ctx.strokeStyle = '#000';
-                ctx.lineWidth = 2;
-                ctx.lineCap = 'round';
-                ctx.stroke();
                 
-                lastX = pos.x;
-                lastY = pos.y;
+                ctx.lineTo(pos.x, pos.y);
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.moveTo(pos.x, pos.y);
+                
                 e.preventDefault();
             }
 
-            function stopDrawing() {
+            function stopDrawing(e) {
+                if (!isDrawing) return;
                 isDrawing = false;
                 canvas.classList.remove('drawing');
+                e.preventDefault();
             }
 
             // Mouse events
@@ -696,16 +716,46 @@
             canvas.addEventListener('mouseup', stopDrawing);
             canvas.addEventListener('mouseout', stopDrawing);
 
-            // Touch events
+            // Touch events for mobile
             canvas.addEventListener('touchstart', startDrawing);
             canvas.addEventListener('touchmove', draw);
             canvas.addEventListener('touchend', stopDrawing);
+            
+            // Prevent scrolling when touching the canvas
+            canvas.addEventListener('touchstart', function(e) {
+                e.preventDefault();
+            }, { passive: false });
+            canvas.addEventListener('touchend', function(e) {
+                e.preventDefault();
+            }, { passive: false });
+            canvas.addEventListener('touchmove', function(e) {
+                e.preventDefault();
+            }, { passive: false });
         }
 
         function clearSignature(canvasId) {
             var canvas = document.getElementById(canvasId);
             var ctx = canvas.getContext('2d');
             ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
+
+        function testSignature() {
+            var canvas = document.getElementById('teacherSignaturePad');
+            var ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Draw sample signature
+            ctx.strokeStyle = '#000000';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(50, 100);
+            ctx.lineTo(150, 80);
+            ctx.lineTo(200, 120);
+            ctx.lineTo(250, 90);
+            ctx.lineTo(350, 110);
+            ctx.stroke();
+            
+            showNotification('ทดสอบลายเซ็นเรียบร้อย คุณสามารถลบและเซ็นใหม่ได้', 'info');
         }
 
         // Teacher form functions
@@ -887,17 +937,86 @@
             container.innerHTML = html;
         }
 
+        // Data loading functions from Google Sheets
+        function loadRecordsFromSheet() {
+            if (!appConfig.scriptUrl) {
+                console.log('No script URL configured, using localStorage only');
+                return;
+            }
+
+            var requestData = {
+                action: 'getRecords',
+                sheetId: appConfig.sheetId
+            };
+
+            fetch(appConfig.scriptUrl, {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: {
+                    'Content-Type': 'text/plain',
+                },
+                body: JSON.stringify(requestData)
+            })
+            .then(function(response) {
+                // Note: Due to no-cors mode, we can't read the response
+                // The data will be stored in Google Sheets
+                console.log('Request sent to load records from Google Sheets');
+            })
+            .catch(function(error) {
+                console.error('Failed to load records from Google Sheets:', error);
+            });
+        }
+
         function loadDashboardData() {
-            var total = records.length;
-            var pending = records.filter(function(r) { return r.status === 'pending'; }).length;
-            var approved = records.filter(function(r) { return r.adminApproval === 'approved'; }).length;
-            var rejected = records.filter(function(r) { return r.adminApproval === 'rejected' || r.headApproval === 'rejected'; }).length;
+            // First load from localStorage
+            var localRecords = JSON.parse(localStorage.getItem('teachingRecords') || '[]');
             
+            // Try to get fresh data from Google Sheets
+            if (appConfig.scriptUrl) {
+                var requestData = {
+                    action: 'getStatistics',
+                    sheetId: appConfig.sheetId
+                };
+
+                fetch(appConfig.scriptUrl, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: {
+                        'Content-Type': 'text/plain',
+                    },
+                    body: JSON.stringify(requestData)
+                })
+                .then(function() {
+                    console.log('Statistics request sent to Google Sheets');
+                })
+                .catch(function(error) {
+                    console.error('Failed to get statistics from Google Sheets:', error);
+                });
+            }
+
+            // Use local data for display
+            updateDashboardDisplay(localRecords);
+        }
+
+        function updateDashboardDisplay(records) {
+            var total = records.length;
+            var pending = records.filter(function(r) { 
+                return r.status === 'pending' || (!r.headApproval && !r.adminApproval); 
+            }).length;
+            var approved = records.filter(function(r) { 
+                return r.adminApproval === 'approved' || r.status === 'completed'; 
+            }).length;
+            var rejected = records.filter(function(r) { 
+                return r.adminApproval === 'rejected' || r.headApproval === 'rejected' || r.status === 'rejected'; 
+            }).length;
+            
+            // Update statistics display
             document.getElementById('totalRecords').textContent = total;
             document.getElementById('pendingRecords').textContent = pending;
             document.getElementById('approvedRecords').textContent = approved;
             document.getElementById('rejectedRecords').textContent = rejected;
             
+            // Update recent records
             var recentContainer = document.getElementById('recentRecords');
             if (total === 0) {
                 recentContainer.innerHTML = '<p class="text-gray-500">ไม่มีข้อมูล</p>';
@@ -908,21 +1027,50 @@
             var html = '';
             for (var i = 0; i < recentRecords.length; i++) {
                 var record = recentRecords[i];
-                var statusClass = 'status-' + (record.status || 'pending');
+                var statusText = getStatusText(record);
+                var statusClass = getStatusClass(record);
+                
                 html += '<div class="record-card ' + statusClass + '">';
-                html += '<h4 class="font-semibold text-gray-800">' + record.subject + ' - ' + record.classRoom + '</h4>';
-                html += '<p>ครูประจำ: ' + record.regularTeacher + ' | วันที่: ' + record.date + '</p>';
-                html += '<span class="inline-block px-2 py-1 text-xs rounded ' + 
-                        (record.adminApproval === 'approved' ? 'bg-green-100 text-green-800' :
-                         record.adminApproval === 'rejected' || record.headApproval === 'rejected' ? 'bg-red-100 text-red-800' :
-                         'bg-yellow-100 text-yellow-800') + '">';
-                html += record.adminApproval === 'approved' ? 'อนุมัติแล้ว' :
-                        record.adminApproval === 'rejected' || record.headApproval === 'rejected' ? 'ไม่อนุมัติ' :
-                        'รอดำเนินการ';
+                html += '<h4 class="font-semibold text-gray-800">' + (record.subject || 'ไม่ระบุวิชา') + ' - ' + (record.classRoom || 'ไม่ระบุห้อง') + '</h4>';
+                html += '<p>ครูประจำ: ' + (record.regularTeacher || 'ไม่ระบุ') + ' | วันที่: ' + (record.date || 'ไม่ระบุ') + '</p>';
+                html += '<span class="inline-block px-2 py-1 text-xs rounded ' + getStatusBadgeClass(record) + '">';
+                html += statusText;
                 html += '</span>';
                 html += '</div>';
             }
             recentContainer.innerHTML = html;
+        }
+
+        function getStatusText(record) {
+            if (record.adminApproval === 'approved' || record.status === 'completed') {
+                return 'อนุมัติแล้ว';
+            } else if (record.adminApproval === 'rejected' || record.headApproval === 'rejected' || record.status === 'rejected') {
+                return 'ไม่อนุมัติ';
+            } else if (record.headApproval === 'approved') {
+                return 'รอการอนุมัติจากรอง';
+            } else {
+                return 'รอการอนุมัติ';
+            }
+        }
+
+        function getStatusClass(record) {
+            if (record.adminApproval === 'approved' || record.status === 'completed') {
+                return 'status-approved';
+            } else if (record.adminApproval === 'rejected' || record.headApproval === 'rejected' || record.status === 'rejected') {
+                return 'status-rejected';
+            } else {
+                return 'status-pending';
+            }
+        }
+
+        function getStatusBadgeClass(record) {
+            if (record.adminApproval === 'approved' || record.status === 'completed') {
+                return 'bg-green-100 text-green-800';
+            } else if (record.adminApproval === 'rejected' || record.headApproval === 'rejected' || record.status === 'rejected') {
+                return 'bg-red-100 text-red-800';
+            } else {
+                return 'bg-yellow-100 text-yellow-800';
+            }
         }
 
         // Record action functions
@@ -1026,6 +1174,9 @@
             loadSettings();
             records = JSON.parse(localStorage.getItem('teachingRecords') || '[]');
             
+            // Try to load fresh data from Google Sheets
+            loadRecordsFromSheet();
+            
             // Show menu by default
             showSection('menuSection');
             
@@ -1037,6 +1188,7 @@
             }
             
             console.log('Application initialized successfully');
+            console.log('Records loaded:', records.length);
         });
     </script>
 </body>
