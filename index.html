@@ -655,8 +655,6 @@
             
             var ctx = canvas.getContext('2d');
             var isDrawing = false;
-            var lastX = 0;
-            var lastY = 0;
 
             // Set better drawing settings
             ctx.lineCap = 'round';
@@ -666,21 +664,18 @@
 
             function getEventPos(e) {
                 var rect = canvas.getBoundingClientRect();
-                var scaleX = canvas.width / rect.width;
-                var scaleY = canvas.height / rect.height;
                 var clientX = e.clientX || (e.touches ? e.touches[0].clientX : 0);
                 var clientY = e.clientY || (e.touches ? e.touches[0].clientY : 0);
                 return {
-                    x: (clientX - rect.left) * scaleX,
-                    y: (clientY - rect.top) * scaleY
+                    x: clientX - rect.left,
+                    y: clientY - rect.top
                 };
             }
 
             function startDrawing(e) {
                 isDrawing = true;
                 var pos = getEventPos(e);
-                lastX = pos.x;
-                lastY = pos.y;
+                
                 canvas.classList.add('drawing');
                 
                 // Start new path
