@@ -949,18 +949,56 @@
             var html = '';
             for (var i = 0; i < readyRecords.length; i++) {
                 var record = readyRecords[i];
-                html += '<div class="record-card status-pending">';
+                html += '<div class="record-card status-pending mb-6">';
                 html += '<h4 class="font-semibold text-gray-800">วิชา: ' + record.subject + '</h4>';
                 html += '<p>ชั้น: ' + record.classRoom + ' | วันที่: ' + record.date + ' | เวลา: ' + record.time + '</p>';
                 html += '<p>ครูประจำ: ' + record.regularTeacher + ' | ครูสอนแทน: ' + record.substituteTeacher + '</p>';
                 html += '<p>เนื้อหา: ' + record.content + '</p>';
+                
+                // Show substitute report if available
+                if (record.substituteReport) {
+                    html += '<div class="mt-3 p-3 bg-blue-50 rounded">';
+                    html += '<h6 class="font-medium text-blue-800">รายงานครูสอนแทน</h6>';
+                    html += '<p>จำนวนนักเรียน: ' + record.substituteReport.attendance + '</p>';
+                    html += '<p>พฤติกรรม: ' + record.substituteReport.behavior + '</p>';
+                    if (record.substituteReport.observations) {
+                        html += '<p>ข้อสังเกต: ' + record.substituteReport.observations + '</p>';
+                    }
+                    html += '</div>';
+                }
+                
+                // Add reason input field
+                html += '<div class="mt-4 border-t pt-4">';
+                html += '<label class="block text-gray-700 font-medium mb-2">เหตุผลในการพิจารณา</label>';
+                html += '<textarea id="adminReason_' + record.id + '" rows="2" placeholder="ระบุเหตุผลในการอนุมัติหรือไม่อนุมัติ" ';
+                html += 'class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent mb-3"></textarea>';
+                html += '</div>';
+                
+                // Add signature area for admin approval
+                html += '<div class="mt-4">';
+                html += '<h5 class="font-medium text-gray-700 mb-2">ลายเซ็นรองกลุ่มบริหาร</h5>';
+                html += '<canvas id="adminSignature_' + record.id + '" width="400" height="120" ';
+                html += 'class="signature-pad w-full bg-white rounded cursor-crosshair border-2 border-purple-300 mb-2"></canvas>';
+                html += '<div class="flex space-x-2 mb-4">';
+                html += '<button onclick="clearSignature(\'adminSignature_' + record.id + '\')" ';
+                html += 'class="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600">ลบลายเซ็น</button>';
+                html += '</div>';
+                html += '</div>';
+                
                 html += '<div class="mt-4 space-x-2">';
-                html += '<button onclick="finalApprove(\'' + record.id + '\')" class="bg-green-600 text-white px-4 py-2 rounded">อนุมัติขั้นสุดท้าย</button>';
-                html += '<button onclick="finalReject(\'' + record.id + '\')" class="bg-red-600 text-white px-4 py-2 rounded">ไม่อนุมัติ</button>';
+                html += '<button onclick="finalApproveWithSignature(\'' + record.id + '\')" class="bg-green-600 text-white px-4 py-2 rounded">อนุมัติขั้นสุดท้าย</button>';
+                html += '<button onclick="finalRejectWithSignature(\'' + record.id + '\')" class="bg-red-600 text-white px-4 py-2 rounded">ไม่อนุมัติ</button>';
                 html += '</div>';
                 html += '</div>';
             }
             container.innerHTML = html;
+            
+            // Initialize signature pads for each record after a short delay
+            setTimeout(function() {
+                for (var i = 0; i < readyRecords.length; i++) {
+                    initSignaturePad('adminSignature_' + readyRecords[i].id);
+                }
+            }, 100);
         }
 
         // Data loading functions from Google Sheets
@@ -1222,6 +1260,98 @@
             }
         }
 
+        function finalApproveWithSignature(recordId) {
+            var reasonTextarea = document.getElementById('adminReason_' + recordId);
+            var canvas = document.getElementById('adminSignature_' + recordId);
+            
+            if (!canvas) {
+                showNotification('ไม่พบพื้นที่ลายเซ็น', 'error');
+                return;
+            }
+
+            var reason = reasonTextarea ? reasonTextarea.value.trim() : '';
+            if (!reason) {
+                showNotification('กรุณาระบุเหตุผลในการพิจารณา', 'error');
+                return;
+            }
+
+            // Check if signature exists
+            var ctx = canvas.getContext('2d');
+            var imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            var hasSignature = false;
+            
+            for (var i = 0; i < imageData.data.length; i += 4) {
+                var r = imageData.data[i];
+                var g = imageData.data[i + 1];
+                var b = imageData.data[i + 2];
+                var a = imageData.data[i + 3];
+                
+                if (a > 0 && (r < 255 || g < 255 || b < 255)) {
+                    hasSignature = true;
+                    break;
+                }
+            }
+            
+            if (!hasSignature) {
+                showNotification('กรุณาเซ็นลายเซ็นก่อนอนุมัติ', 'error');
+                return;
+            }
+
+            var signatureData = canvas.toDataURL();
+            
+            // Find and update the record
+            for (var i = 0; i < records.length; i++) {
+                if (records[i].id === recordId) {
+                    records[i].adminApproval = 'approved';
+                    records[i].adminReason = reason;
+                    records[i].adminSignature = signatureData;
+                    records[i].status = 'completed';
+                    break;
+                }
+            }
+            
+            // Update localStorage immediately
+            localStorage.setItem('teachingRecords', JSON.stringify(records));
+            
+            // Send update to Google Sheet
+            if (appConfig.scriptUrl) {
+                var updateData = {
+                    action: 'updateRecord',
+                    recordId: recordId,
+                    updateData: {
+                        adminApproval: 'approved',
+                        adminReason: reason,
+                        status: 'completed'
+                    },
+                    adminSignature: signatureData,
+                    sheetId: appConfig.sheetId,
+                    folderId: appConfig.folderId
+                };
+
+                fetch(appConfig.scriptUrl, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: {
+                        'Content-Type': 'text/plain',
+                    },
+                    body: JSON.stringify(updateData)
+                })
+                .then(function() {
+                    console.log('Admin approval sent to Google Sheet');
+                })
+                .catch(function(error) {
+                    console.error('Failed to send admin approval to Google Sheet:', error);
+                });
+            }
+            
+            showNotification('อนุมัติขั้นสุดท้ายเรียบร้อย พร้อมบันทึกลายเซ็น', 'success');
+            
+            // Reload the admin records to update the display
+            setTimeout(function() {
+                loadAdminRecords();
+            }, 500);
+        }
+
         function finalReject(recordId) {
             var reason = prompt('เหตุผลที่ไม่อนุมัติ:');
             if (reason) {
@@ -1235,6 +1365,98 @@
                     loadAdminRecords();
                 }
             }
+        }
+
+        function finalRejectWithSignature(recordId) {
+            var reasonTextarea = document.getElementById('adminReason_' + recordId);
+            var canvas = document.getElementById('adminSignature_' + recordId);
+            
+            if (!canvas) {
+                showNotification('ไม่พบพื้นที่ลายเซ็น', 'error');
+                return;
+            }
+
+            var reason = reasonTextarea ? reasonTextarea.value.trim() : '';
+            if (!reason) {
+                showNotification('กรุณาระบุเหตุผลในการพิจารณา', 'error');
+                return;
+            }
+
+            // Check if signature exists
+            var ctx = canvas.getContext('2d');
+            var imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            var hasSignature = false;
+            
+            for (var i = 0; i < imageData.data.length; i += 4) {
+                var r = imageData.data[i];
+                var g = imageData.data[i + 1];
+                var b = imageData.data[i + 2];
+                var a = imageData.data[i + 3];
+                
+                if (a > 0 && (r < 255 || g < 255 || b < 255)) {
+                    hasSignature = true;
+                    break;
+                }
+            }
+            
+            if (!hasSignature) {
+                showNotification('กรุณาเซ็นลายเซ็นก่อนไม่อนุมัติ', 'error');
+                return;
+            }
+
+            var signatureData = canvas.toDataURL();
+            
+            // Find and update the record
+            for (var i = 0; i < records.length; i++) {
+                if (records[i].id === recordId) {
+                    records[i].adminApproval = 'rejected';
+                    records[i].adminReason = reason;
+                    records[i].adminSignature = signatureData;
+                    records[i].status = 'rejected';
+                    break;
+                }
+            }
+            
+            // Update localStorage immediately
+            localStorage.setItem('teachingRecords', JSON.stringify(records));
+            
+            // Send update to Google Sheet
+            if (appConfig.scriptUrl) {
+                var updateData = {
+                    action: 'updateRecord',
+                    recordId: recordId,
+                    updateData: {
+                        adminApproval: 'rejected',
+                        adminReason: reason,
+                        status: 'rejected'
+                    },
+                    adminSignature: signatureData,
+                    sheetId: appConfig.sheetId,
+                    folderId: appConfig.folderId
+                };
+
+                fetch(appConfig.scriptUrl, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: {
+                        'Content-Type': 'text/plain',
+                    },
+                    body: JSON.stringify(updateData)
+                })
+                .then(function() {
+                    console.log('Admin rejection sent to Google Sheet');
+                })
+                .catch(function(error) {
+                    console.error('Failed to send admin rejection to Google Sheet:', error);
+                });
+            }
+            
+            showNotification('บันทึกการไม่อนุมัติเรียบร้อย พร้อมบันทึกลายเซ็น', 'success');
+            
+            // Reload the admin records to update the display
+            setTimeout(function() {
+                loadAdminRecords();
+            }, 500);
         }
 
         function showSubstituteReportForm(recordId) {
