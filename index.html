@@ -1141,49 +1141,58 @@
             }
 
             var signatureData = canvas.toDataURL();
-            var record = records.find(function(r) { return r.id === recordId; });
             
-            if (record) {
-                record.headApproval = 'approved';
-                record.headReason = 'อนุมัติโดยหัวหน้าสาระพร้อมลายเซ็น';
-                record.headSignature = signatureData;
-                
-                // Update localStorage
-                localStorage.setItem('teachingRecords', JSON.stringify(records));
-                
-                // Send update to Google Sheet
-                if (appConfig.scriptUrl) {
-                    var updateData = {
-                        action: 'updateRecord',
-                        recordId: recordId,
-                        updateData: {
-                            headApproval: 'approved',
-                            headReason: 'อนุมัติโดยหัวหน้าสาระพร้อมลายเซ็น'
-                        },
-                        headSignature: signatureData,
-                        sheetId: appConfig.sheetId,
-                        folderId: appConfig.folderId
-                    };
-
-                    fetch(appConfig.scriptUrl, {
-                        method: 'POST',
-                        mode: 'no-cors',
-                        headers: {
-                            'Content-Type': 'text/plain',
-                        },
-                        body: JSON.stringify(updateData)
-                    })
-                    .then(function() {
-                        console.log('Head approval sent to Google Sheet');
-                    })
-                    .catch(function(error) {
-                        console.error('Failed to send head approval to Google Sheet:', error);
-                    });
+            // Find and update the record
+            for (var i = 0; i < records.length; i++) {
+                if (records[i].id === recordId) {
+                    records[i].headApproval = 'approved';
+                    records[i].headReason = 'อนุมัติโดยหัวหน้าสาระพร้อมลายเซ็น';
+                    records[i].headSignature = signatureData;
+                    records[i].status = 'head_approved';
+                    break;
                 }
-                
-                showNotification('อนุมัติรายการเรียบร้อย พร้อมบันทึกลายเซ็น', 'success');
-                loadHeadRecords();
             }
+            
+            // Update localStorage immediately
+            localStorage.setItem('teachingRecords', JSON.stringify(records));
+            
+            // Send update to Google Sheet
+            if (appConfig.scriptUrl) {
+                var updateData = {
+                    action: 'updateRecord',
+                    recordId: recordId,
+                    updateData: {
+                        headApproval: 'approved',
+                        headReason: 'อนุมัติโดยหัวหน้าสาระพร้อมลายเซ็น',
+                        status: 'head_approved'
+                    },
+                    headSignature: signatureData,
+                    sheetId: appConfig.sheetId,
+                    folderId: appConfig.folderId
+                };
+
+                fetch(appConfig.scriptUrl, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: {
+                        'Content-Type': 'text/plain',
+                    },
+                    body: JSON.stringify(updateData)
+                })
+                .then(function() {
+                    console.log('Head approval sent to Google Sheet');
+                })
+                .catch(function(error) {
+                    console.error('Failed to send head approval to Google Sheet:', error);
+                });
+            }
+            
+            showNotification('อนุมัติรายการเรียบร้อย พร้อมบันทึกลายเซ็น', 'success');
+            
+            // Reload the head records to update the display
+            setTimeout(function() {
+                loadHeadRecords();
+            }, 500);
         }
 
         function rejectRecord(recordId) {
