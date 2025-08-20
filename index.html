@@ -63,6 +63,17 @@
         @keyframes spin {
             to { transform: rotate(360deg); }
         }
+        .record-card {
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 16px;
+            background: white;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .status-pending { border-left: 4px solid #f59e0b; }
+        .status-approved { border-left: 4px solid #10b981; }
+        .status-rejected { border-left: 4px solid #ef4444; }
     </style>
 </head>
 <body class="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen">
@@ -78,13 +89,13 @@
                     </div>
                 </div>
                 <div class="flex space-x-2">
-                    <button id="loginBtn" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors">
+                    <button onclick="showLogin()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors">
                         เข้าสู่ระบบ
                     </button>
-                    <button id="dashboardBtn" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors">
+                    <button onclick="showDashboard()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors">
                         แดชบอร์ด
                     </button>
-                    <button id="settingsBtn" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg transition-colors">
+                    <button onclick="showSettings()" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg transition-colors">
                         ⚙️ ตั้งค่า
                     </button>
                 </div>
@@ -96,7 +107,7 @@
     <main class="container mx-auto px-4 py-8">
         <!-- Menu Selection -->
         <div id="menuSection" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            <div class="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow cursor-pointer" id="teacherCard">
+            <div class="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow cursor-pointer" onclick="showTeacherForm()">
                 <div class="text-center">
                     <div class="bg-blue-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
                         <span class="text-2xl">👨‍🏫</span>
@@ -106,7 +117,7 @@
                 </div>
             </div>
 
-            <div class="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow cursor-pointer" id="headCard">
+            <div class="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow cursor-pointer" onclick="showHeadForm()">
                 <div class="text-center">
                     <div class="bg-green-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
                         <span class="text-2xl">👩‍💼</span>
@@ -116,7 +127,7 @@
                 </div>
             </div>
 
-            <div class="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow cursor-pointer" id="substituteCard">
+            <div class="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow cursor-pointer" onclick="showSubstituteForm()">
                 <div class="text-center">
                     <div class="bg-yellow-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
                         <span class="text-2xl">📝</span>
@@ -126,7 +137,7 @@
                 </div>
             </div>
 
-            <div class="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow cursor-pointer" id="adminCard">
+            <div class="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow cursor-pointer" onclick="showAdminForm()">
                 <div class="text-center">
                     <div class="bg-purple-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
                         <span class="text-2xl">⚙️</span>
@@ -170,7 +181,8 @@
                     <!-- Test Connection -->
                     <div class="border-t pt-4">
                         <h3 class="font-semibold text-gray-800 mb-3">ทดสอบการเชื่อมต่อ</h3>
-                        <button id="testBtn" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition-colors">
+                        <button onclick="testConnection()" id="testBtn" 
+                                class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition-colors">
                             🔗 ทดสอบการเชื่อมต่อ
                         </button>
                         <div id="connectionStatus" class="mt-3"></div>
@@ -178,10 +190,10 @@
                 </div>
 
                 <div class="flex space-x-4 mt-6">
-                    <button id="saveSettingsBtn" class="flex-1 bg-green-600 hover:bg-green-700 text-white py-2 rounded-lg transition-colors">
+                    <button onclick="saveSettings()" class="flex-1 bg-green-600 hover:bg-green-700 text-white py-2 rounded-lg transition-colors">
                         💾 บันทึกการตั้งค่า
                     </button>
-                    <button id="closeSettingsBtn" class="flex-1 bg-gray-500 hover:bg-gray-600 text-white py-2 rounded-lg transition-colors">
+                    <button onclick="closeSettings()" class="flex-1 bg-gray-500 hover:bg-gray-600 text-white py-2 rounded-lg transition-colors">
                         ยกเลิก
                     </button>
                 </div>
@@ -208,10 +220,10 @@
                         <input type="password" id="password" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                     </div>
                     <div class="flex space-x-4">
-                        <button id="loginSubmitBtn" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg transition-colors">
+                        <button onclick="login()" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg transition-colors">
                             เข้าสู่ระบบ
                         </button>
-                        <button id="closeLoginBtn" class="flex-1 bg-gray-500 hover:bg-gray-600 text-white py-2 rounded-lg transition-colors">
+                        <button onclick="closeLogin()" class="flex-1 bg-gray-500 hover:bg-gray-600 text-white py-2 rounded-lg transition-colors">
                             ยกเลิก
                         </button>
                     </div>
@@ -294,17 +306,17 @@
                         <canvas id="teacherSignaturePad" width="400" height="150" 
                                 class="signature-pad w-full border border-gray-300 rounded-lg"></canvas>
                         <div class="flex space-x-2 mt-2">
-                            <button type="button" id="clearTeacherSignature" 
+                            <button type="button" onclick="clearSignature('teacherSignaturePad')" 
                                     class="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600">ลบลายเซ็น</button>
                         </div>
                     </div>
 
                     <div class="flex space-x-4">
-                        <button type="submit" id="submitTeacherForm" 
+                        <button type="submit" 
                                 class="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg transition-colors">
                             บันทึกข้อมูล
                         </button>
-                        <button type="button" id="backFromTeacher" 
+                        <button type="button" onclick="backToMenu()" 
                                 class="flex-1 bg-gray-500 hover:bg-gray-600 text-white py-3 rounded-lg transition-colors">
                             กลับ
                         </button>
@@ -313,82 +325,136 @@
             </div>
         </div>
 
-        <!-- Other forms (placeholder for now) -->
+        <!-- Head Form -->
         <div id="headForm" class="hidden">
             <div class="bg-white rounded-xl shadow-lg p-8">
-                <h2 class="text-2xl font-bold text-gray-800 mb-6">👩‍💼 หัวหน้าสาระ</h2>
+                <h2 class="text-2xl font-bold text-gray-800 mb-6">👩‍💼 หัวหน้าสาระ - พิจารณาอนุมัติ</h2>
                 <div id="headRecordsList">
-                    <p class="text-gray-600">ไม่มีรายการที่รออนุมัติ</p>
+                    <!-- Records will be loaded here -->
                 </div>
-                <button id="backFromHead" class="mt-4 bg-gray-500 hover:bg-gray-600 text-white px-6 py-2 rounded-lg">กลับ</button>
+                <button onclick="backToMenu()" class="mt-4 bg-gray-500 hover:bg-gray-600 text-white px-6 py-2 rounded-lg">กลับ</button>
             </div>
         </div>
 
+        <!-- Substitute Form -->
         <div id="substituteForm" class="hidden">
             <div class="bg-white rounded-xl shadow-lg p-8">
-                <h2 class="text-2xl font-bold text-gray-800 mb-6">📝 ครูสอนแทน</h2>
+                <h2 class="text-2xl font-bold text-gray-800 mb-6">📝 ครูสอนแทน - บันทึกผลการสอน</h2>
                 <div id="substituteRecordsList">
-                    <p class="text-gray-600">ไม่มีรายการที่ต้องบันทึก</p>
+                    <!-- Records will be loaded here -->
                 </div>
-                <button id="backFromSubstitute" class="mt-4 bg-gray-500 hover:bg-gray-600 text-white px-6 py-2 rounded-lg">กลับ</button>
+                <button onclick="backToMenu()" class="mt-4 bg-gray-500 hover:bg-gray-600 text-white px-6 py-2 rounded-lg">กลับ</button>
             </div>
         </div>
 
+        <!-- Admin Form -->
         <div id="adminForm" class="hidden">
             <div class="bg-white rounded-xl shadow-lg p-8">
-                <h2 class="text-2xl font-bold text-gray-800 mb-6">⚙️ รองกลุ่มบริหาร</h2>
+                <h2 class="text-2xl font-bold text-gray-800 mb-6">⚙️ รองกลุ่มบริหาร - อนุมัติสุดท้าย</h2>
                 <div id="adminRecordsList">
-                    <p class="text-gray-600">ไม่มีรายการที่รอการอนุมัติ</p>
+                    <!-- Records will be loaded here -->
                 </div>
-                <button id="backFromAdmin" class="mt-4 bg-gray-500 hover:bg-gray-600 text-white px-6 py-2 rounded-lg">กลับ</button>
+                <button onclick="backToMenu()" class="mt-4 bg-gray-500 hover:bg-gray-600 text-white px-6 py-2 rounded-lg">กลับ</button>
             </div>
         </div>
 
+        <!-- Dashboard -->
         <div id="dashboard" class="hidden">
             <div class="bg-white rounded-xl shadow-lg p-8">
                 <h2 class="text-2xl font-bold text-gray-800 mb-6">📊 แดชบอร์ด</h2>
-                <p class="text-gray-600">แดชบอร์ดจะถูกเพิ่มในอนาคต</p>
-                <button id="backFromDashboard" class="mt-4 bg-gray-500 hover:bg-gray-600 text-white px-6 py-2 rounded-lg">กลับ</button>
+                
+                <!-- Statistics Cards -->
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                    <div class="bg-blue-100 rounded-lg p-6">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-blue-600 text-sm font-medium">รวมทั้งหมด</p>
+                                <p class="text-2xl font-bold text-blue-800" id="totalRecords">0</p>
+                            </div>
+                            <div class="text-blue-600 text-3xl">📋</div>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-yellow-100 rounded-lg p-6">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-yellow-600 text-sm font-medium">รออนุมัติ</p>
+                                <p class="text-2xl font-bold text-yellow-800" id="pendingRecords">0</p>
+                            </div>
+                            <div class="text-yellow-600 text-3xl">⏳</div>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-green-100 rounded-lg p-6">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-green-600 text-sm font-medium">อนุมัติแล้ว</p>
+                                <p class="text-2xl font-bold text-green-800" id="approvedRecords">0</p>
+                            </div>
+                            <div class="text-green-600 text-3xl">✅</div>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-red-100 rounded-lg p-6">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-red-600 text-sm font-medium">ไม่อนุมัติ</p>
+                                <p class="text-2xl font-bold text-red-800" id="rejectedRecords">0</p>
+                            </div>
+                            <div class="text-red-600 text-3xl">❌</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Records -->
+                <div class="bg-gray-50 rounded-lg p-6">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4">รายการล่าสุด</h3>
+                    <div id="recentRecords">
+                        <p class="text-gray-500">ไม่มีข้อมูล</p>
+                    </div>
+                </div>
+
+                <button onclick="backToMenu()" class="mt-6 bg-gray-500 hover:bg-gray-600 text-white px-6 py-2 rounded-lg">กลับ</button>
             </div>
         </div>
     </main>
 
     <script>
         // Global variables
-        let currentUser = null;
-        let records = [];
-        let teacherSignaturePad = null;
-        let isDrawing = false;
-        
-        const appConfig = {
+        var currentUser = null;
+        var records = [];
+        var appConfig = {
             scriptUrl: 'https://script.google.com/macros/s/AKfycbxh8eE0eSTzD6rSyXE2cRVpXjU7hTBJ9IuiCI1lG_07CbTHRr0oROC3x2t4aeGjlJf-/exec',
             sheetId: '137OMps_3meAY5lTwfR-Aq4QhqSn5ul1Eqiz8SjALyf4',
             folderId: '1pfSdQHTZwY4VpPtpB7jyLQr4UNFdReEz'
         };
 
         // Utility functions
-        function showNotification(message, type = 'info', duration = 5000) {
-            const notification = document.createElement('div');
-            notification.className = `notification ${type}`;
+        function showNotification(message, type, duration) {
+            type = type || 'info';
+            duration = duration || 5000;
             
-            const closeBtn = document.createElement('button');
+            var notification = document.createElement('div');
+            notification.className = 'notification ' + type;
+            
+            var closeBtn = document.createElement('button');
             closeBtn.innerHTML = '×';
             closeBtn.className = 'ml-4 text-white hover:text-gray-200 text-xl';
-            closeBtn.onclick = () => notification.remove();
+            closeBtn.onclick = function() { notification.remove(); };
             
-            const messageDiv = document.createElement('div');
+            var messageDiv = document.createElement('div');
             messageDiv.className = 'flex items-center justify-between';
-            messageDiv.innerHTML = `<span>${message}</span>`;
+            messageDiv.innerHTML = '<span>' + message + '</span>';
             messageDiv.appendChild(closeBtn);
             
             notification.appendChild(messageDiv);
             document.body.appendChild(notification);
             
-            setTimeout(() => notification.classList.add('show'), 100);
+            setTimeout(function() { notification.classList.add('show'); }, 100);
             
-            setTimeout(() => {
+            setTimeout(function() {
                 notification.classList.remove('show');
-                setTimeout(() => {
+                setTimeout(function() {
                     if (notification.parentNode) {
                         notification.remove();
                     }
@@ -397,10 +463,10 @@
         }
 
         function hideAllSections() {
-            const sections = ['menuSection', 'teacherForm', 'headForm', 'substituteForm', 'adminForm', 'dashboard'];
-            sections.forEach(id => {
-                document.getElementById(id).classList.add('hidden');
-            });
+            var sections = ['menuSection', 'teacherForm', 'headForm', 'substituteForm', 'adminForm', 'dashboard'];
+            for (var i = 0; i < sections.length; i++) {
+                document.getElementById(sections[i]).classList.add('hidden');
+            }
         }
 
         function showSection(sectionId) {
@@ -412,11 +478,39 @@
             showSection('menuSection');
         }
 
+        // Navigation functions
+        function showTeacherForm() {
+            showSection('teacherForm');
+        }
+
+        function showHeadForm() {
+            loadHeadRecords();
+            showSection('headForm');
+        }
+
+        function showSubstituteForm() {
+            loadSubstituteRecords();
+            showSection('substituteForm');
+        }
+
+        function showAdminForm() {
+            loadAdminRecords();
+            showSection('adminForm');
+        }
+
+        function showDashboard() {
+            loadDashboardData();
+            showSection('dashboard');
+        }
+
         // Settings functions
         function loadSettings() {
-            const savedConfig = localStorage.getItem('appConfig');
+            var savedConfig = localStorage.getItem('appConfig');
             if (savedConfig) {
-                Object.assign(appConfig, JSON.parse(savedConfig));
+                var saved = JSON.parse(savedConfig);
+                appConfig.scriptUrl = saved.scriptUrl || appConfig.scriptUrl;
+                appConfig.sheetId = saved.sheetId || appConfig.sheetId;
+                appConfig.folderId = saved.folderId || appConfig.folderId;
             }
             
             document.getElementById('scriptUrl').value = appConfig.scriptUrl;
@@ -452,8 +546,8 @@
 
         // Test connection
         function testConnection() {
-            const testBtn = document.getElementById('testBtn');
-            const statusDiv = document.getElementById('connectionStatus');
+            var testBtn = document.getElementById('testBtn');
+            var statusDiv = document.getElementById('connectionStatus');
             
             if (!appConfig.scriptUrl) {
                 statusDiv.innerHTML = '<div class="text-red-600">❌ กรุณาใส่ Google Apps Script URL ก่อน</div>';
@@ -475,40 +569,19 @@
                     timestamp: new Date().toISOString()
                 })
             })
-            .then(() => {
+            .then(function() {
                 statusDiv.innerHTML = '<div class="text-green-600">✅ การเชื่อมต่อสำเร็จ! ระบบพร้อมใช้งาน</div>';
                 showNotification('ทดสอบการเชื่อมต่อสำเร็จ', 'success');
             })
-            .catch(error => {
+            .catch(function(error) {
                 console.error('Connection test failed:', error);
-                statusDiv.innerHTML = `<div class="text-red-600">❌ การเชื่อมต่อล้มเหลว: ${error.message}</div>`;
+                statusDiv.innerHTML = '<div class="text-red-600">❌ การเชื่อมต่อล้มเหลว: ' + error.message + '</div>';
                 showNotification('การเชื่อมต่อล้มเหลว กรุณาตรวจสอบ URL', 'error');
             })
-            .finally(() => {
+            .finally(function() {
                 testBtn.disabled = false;
                 testBtn.innerHTML = '🔗 ทดสอบการเชื่อมต่อ';
             });
-        }
-
-        // Navigation functions
-        function showTeacherForm() {
-            showSection('teacherForm');
-        }
-
-        function showHeadForm() {
-            showSection('headForm');
-        }
-
-        function showSubstituteForm() {
-            showSection('substituteForm');
-        }
-
-        function showAdminForm() {
-            showSection('adminForm');
-        }
-
-        function showDashboard() {
-            showSection('dashboard');
         }
 
         // Login functions
@@ -526,8 +599,8 @@
         }
 
         function login() {
-            const userType = document.getElementById('userType').value;
-            const password = document.getElementById('password').value;
+            var userType = document.getElementById('userType').value;
+            var password = document.getElementById('password').value;
             
             if (!userType) {
                 showNotification('กรุณาเลือกประเภทผู้ใช้', 'error');
@@ -552,33 +625,34 @@
             // Redirect to appropriate form
             switch(userType) {
                 case 'teacher':
-                    showSection('teacherForm');
+                    showTeacherForm();
                     break;
                 case 'head':
-                    showSection('headForm');
+                    showHeadForm();
                     break;
                 case 'substitute':
-                    showSection('substituteForm');
+                    showSubstituteForm();
                     break;
                 case 'admin':
-                    showSection('adminForm');
+                    showAdminForm();
                     break;
             }
         }
 
         // Signature pad functions
-        function initSignaturePad() {
-            const canvas = document.getElementById('teacherSignaturePad');
-            const ctx = canvas.getContext('2d');
+        function initSignaturePad(canvasId) {
+            var canvas = document.getElementById(canvasId);
+            if (!canvas) return;
             
-            let isDrawing = false;
-            let lastX = 0;
-            let lastY = 0;
+            var ctx = canvas.getContext('2d');
+            var isDrawing = false;
+            var lastX = 0;
+            var lastY = 0;
 
             function getEventPos(e) {
-                const rect = canvas.getBoundingClientRect();
-                const clientX = e.clientX || (e.touches ? e.touches[0].clientX : 0);
-                const clientY = e.clientY || (e.touches ? e.touches[0].clientY : 0);
+                var rect = canvas.getBoundingClientRect();
+                var clientX = e.clientX || (e.touches ? e.touches[0].clientX : 0);
+                var clientY = e.clientY || (e.touches ? e.touches[0].clientY : 0);
                 return {
                     x: clientX - rect.left,
                     y: clientY - rect.top
@@ -587,7 +661,7 @@
 
             function startDrawing(e) {
                 isDrawing = true;
-                const pos = getEventPos(e);
+                var pos = getEventPos(e);
                 lastX = pos.x;
                 lastY = pos.y;
                 canvas.classList.add('drawing');
@@ -597,7 +671,7 @@
             function draw(e) {
                 if (!isDrawing) return;
                 
-                const pos = getEventPos(e);
+                var pos = getEventPos(e);
                 ctx.beginPath();
                 ctx.moveTo(lastX, lastY);
                 ctx.lineTo(pos.x, pos.y);
@@ -626,11 +700,12 @@
             canvas.addEventListener('touchstart', startDrawing);
             canvas.addEventListener('touchmove', draw);
             canvas.addEventListener('touchend', stopDrawing);
+        }
 
-            // Clear signature
-            document.getElementById('clearTeacherSignature').addEventListener('click', () => {
-                ctx.clearRect(0, 0, canvas.width, canvas.height);
-            });
+        function clearSignature(canvasId) {
+            var canvas = document.getElementById(canvasId);
+            var ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
         }
 
         // Teacher form functions
@@ -642,7 +717,7 @@
                 return;
             }
 
-            const formData = {
+            var formData = {
                 id: 'TEACH_' + Date.now(),
                 timestamp: new Date().toISOString(),
                 date: document.getElementById('teachingDate').value,
@@ -659,44 +734,37 @@
             };
 
             // Get signature
-            const canvas = document.getElementById('teacherSignaturePad');
-            const signatureData = canvas.toDataURL();
+            var canvas = document.getElementById('teacherSignaturePad');
+            var signatureData = canvas.toDataURL();
             
             // Check if signature is not empty
-            const ctx = canvas.getContext('2d');
-            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-            const hasSignature = imageData.data.some((channel, index) => index % 4 !== 3 && channel !== 0);
+            var ctx = canvas.getContext('2d');
+            var imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            var hasSignature = false;
+            for (var i = 0; i < imageData.data.length; i += 4) {
+                if (imageData.data[i] !== 0 || imageData.data[i+1] !== 0 || imageData.data[i+2] !== 0) {
+                    hasSignature = true;
+                    break;
+                }
+            }
             
             if (!hasSignature) {
                 showNotification('กรุณาเซ็นลายเซ็นก่อนส่งข้อมูล', 'error');
                 return;
             }
 
-            // Get files
-            const fileInput = document.getElementById('attachmentFiles');
-            const files = [];
-            
-            if (fileInput.files.length > 0) {
-                for (let i = 0; i < fileInput.files.length; i++) {
-                    const file = fileInput.files[i];
-                    const reader = new FileReader();
-                    reader.readAsDataURL(file);
-                    // Note: This is simplified - in real implementation, you'd need to handle async file reading
-                }
-            }
-
-            const submitData = {
+            var submitData = {
                 action: 'addRecord',
                 data: formData,
                 signatures: {
                     teacher: signatureData
                 },
-                files: files,
+                files: [],
                 sheetId: appConfig.sheetId,
                 folderId: appConfig.folderId
             };
 
-            const submitBtn = document.getElementById('submitTeacherForm');
+            var submitBtn = document.querySelector('#teacherForm button[type="submit"]');
             submitBtn.disabled = true;
             submitBtn.innerHTML = '<div class="loading"></div> กำลังบันทึก...';
 
@@ -708,7 +776,7 @@
                 },
                 body: JSON.stringify(submitData)
             })
-            .then(() => {
+            .then(function() {
                 showNotification('บันทึกข้อมูลสำเร็จ รอการอนุมัติจากหัวหน้าสาระ', 'success');
                 document.getElementById('teacherAssignmentForm').reset();
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -719,68 +787,240 @@
                 
                 backToMenu();
             })
-            .catch(error => {
+            .catch(function(error) {
                 console.error('Submit failed:', error);
                 showNotification('เกิดข้อผิดพลาดในการบันทึก กรุณาลองใหม่', 'error');
             })
-            .finally(() => {
+            .finally(function() {
                 submitBtn.disabled = false;
                 submitBtn.innerHTML = 'บันทึกข้อมูล';
             });
         }
 
-        // Event listeners
-        function setupEventListeners() {
-            // Header buttons
-            document.getElementById('loginBtn').addEventListener('click', showLogin);
-            document.getElementById('dashboardBtn').addEventListener('click', () => showSection('dashboard'));
-            document.getElementById('settingsBtn').addEventListener('click', showSettings);
-
-            // Menu cards
-            document.getElementById('teacherCard').addEventListener('click', () => showSection('teacherForm'));
-            document.getElementById('headCard').addEventListener('click', () => showSection('headForm'));
-            document.getElementById('substituteCard').addEventListener('click', () => showSection('substituteForm'));
-            document.getElementById('adminCard').addEventListener('click', () => showSection('adminForm'));
-
-            // Settings modal
-            document.getElementById('testBtn').addEventListener('click', testConnection);
-            document.getElementById('saveSettingsBtn').addEventListener('click', saveSettings);
-            document.getElementById('closeSettingsBtn').addEventListener('click', closeSettings);
-
-            // Login modal
-            document.getElementById('loginSubmitBtn').addEventListener('click', login);
-            document.getElementById('closeLoginBtn').addEventListener('click', closeLogin);
-            document.getElementById('userType').addEventListener('change', function() {
-                const userType = this.value;
-                const passwordField = document.getElementById('passwordField');
-                
-                if (userType === 'head' || userType === 'admin') {
-                    passwordField.classList.remove('hidden');
-                } else {
-                    passwordField.classList.add('hidden');
-                }
+        // Load records functions
+        function loadHeadRecords() {
+            var container = document.getElementById('headRecordsList');
+            var pendingRecords = records.filter(function(record) {
+                return record.status === 'pending';
             });
-
-            // Teacher form
-            document.getElementById('teacherAssignmentForm').addEventListener('submit', submitTeacherForm);
-            document.getElementById('backFromTeacher').addEventListener('click', backToMenu);
-
-            // Back buttons
-            document.getElementById('backFromHead').addEventListener('click', backToMenu);
-            document.getElementById('backFromSubstitute').addEventListener('click', backToMenu);
-            document.getElementById('backFromAdmin').addEventListener('click', backToMenu);
-            document.getElementById('backFromDashboard').addEventListener('click', backToMenu);
+            
+            if (pendingRecords.length === 0) {
+                container.innerHTML = '<p class="text-gray-600">ไม่มีรายการที่รออนุมัติ</p>';
+                return;
+            }
+            
+            var html = '';
+            for (var i = 0; i < pendingRecords.length; i++) {
+                var record = pendingRecords[i];
+                html += '<div class="record-card status-pending">';
+                html += '<h4 class="font-semibold text-gray-800">วิชา: ' + record.subject + '</h4>';
+                html += '<p>ชั้น: ' + record.classRoom + ' | วันที่: ' + record.date + ' | เวลา: ' + record.time + '</p>';
+                html += '<p>ครูประจำ: ' + record.regularTeacher + ' | ครูสอนแทน: ' + record.substituteTeacher + '</p>';
+                html += '<p>เนื้อหา: ' + record.content + '</p>';
+                html += '<div class="mt-4 space-x-2">';
+                html += '<button onclick="approveRecord(\'' + record.id + '\')" class="bg-green-600 text-white px-4 py-2 rounded">อนุมัติ</button>';
+                html += '<button onclick="rejectRecord(\'' + record.id + '\')" class="bg-red-600 text-white px-4 py-2 rounded">ไม่อนุมัติ</button>';
+                html += '</div>';
+                html += '</div>';
+            }
+            container.innerHTML = html;
         }
 
-        // Initialize the application
+        function loadSubstituteRecords() {
+            var container = document.getElementById('substituteRecordsList');
+            var approvedRecords = records.filter(function(record) {
+                return record.headApproval === 'approved';
+            });
+            
+            if (approvedRecords.length === 0) {
+                container.innerHTML = '<p class="text-gray-600">ไม่มีรายการที่ต้องบันทึก</p>';
+                return;
+            }
+            
+            var html = '';
+            for (var i = 0; i < approvedRecords.length; i++) {
+                var record = approvedRecords[i];
+                html += '<div class="record-card status-approved">';
+                html += '<h4 class="font-semibold text-gray-800">วิชา: ' + record.subject + '</h4>';
+                html += '<p>ชั้น: ' + record.classRoom + ' | วันที่: ' + record.date + ' | เวลา: ' + record.time + '</p>';
+                html += '<p>ครูประจำ: ' + record.regularTeacher + ' | ครูสอนแทน: ' + record.substituteTeacher + '</p>';
+                html += '<p>เนื้อหา: ' + record.content + '</p>';
+                if (!record.substituteReport) {
+                    html += '<div class="mt-4">';
+                    html += '<button onclick="showSubstituteReportForm(\'' + record.id + '\')" class="bg-blue-600 text-white px-4 py-2 rounded">บันทึกผลการสอน</button>';
+                    html += '</div>';
+                } else {
+                    html += '<div class="mt-2 p-3 bg-green-50 rounded">';
+                    html += '<p class="text-green-800">✅ บันทึกผลการสอนแล้ว</p>';
+                    html += '</div>';
+                }
+                html += '</div>';
+            }
+            container.innerHTML = html;
+        }
+
+        function loadAdminRecords() {
+            var container = document.getElementById('adminRecordsList');
+            var readyRecords = records.filter(function(record) {
+                return record.headApproval === 'approved' && record.substituteReport && !record.adminApproval;
+            });
+            
+            if (readyRecords.length === 0) {
+                container.innerHTML = '<p class="text-gray-600">ไม่มีรายการที่รอการอนุมัติ</p>';
+                return;
+            }
+            
+            var html = '';
+            for (var i = 0; i < readyRecords.length; i++) {
+                var record = readyRecords[i];
+                html += '<div class="record-card status-pending">';
+                html += '<h4 class="font-semibold text-gray-800">วิชา: ' + record.subject + '</h4>';
+                html += '<p>ชั้น: ' + record.classRoom + ' | วันที่: ' + record.date + ' | เวลา: ' + record.time + '</p>';
+                html += '<p>ครูประจำ: ' + record.regularTeacher + ' | ครูสอนแทน: ' + record.substituteTeacher + '</p>';
+                html += '<p>เนื้อหา: ' + record.content + '</p>';
+                html += '<div class="mt-4 space-x-2">';
+                html += '<button onclick="finalApprove(\'' + record.id + '\')" class="bg-green-600 text-white px-4 py-2 rounded">อนุมัติขั้นสุดท้าย</button>';
+                html += '<button onclick="finalReject(\'' + record.id + '\')" class="bg-red-600 text-white px-4 py-2 rounded">ไม่อนุมัติ</button>';
+                html += '</div>';
+                html += '</div>';
+            }
+            container.innerHTML = html;
+        }
+
+        function loadDashboardData() {
+            var total = records.length;
+            var pending = records.filter(function(r) { return r.status === 'pending'; }).length;
+            var approved = records.filter(function(r) { return r.adminApproval === 'approved'; }).length;
+            var rejected = records.filter(function(r) { return r.adminApproval === 'rejected' || r.headApproval === 'rejected'; }).length;
+            
+            document.getElementById('totalRecords').textContent = total;
+            document.getElementById('pendingRecords').textContent = pending;
+            document.getElementById('approvedRecords').textContent = approved;
+            document.getElementById('rejectedRecords').textContent = rejected;
+            
+            var recentContainer = document.getElementById('recentRecords');
+            if (total === 0) {
+                recentContainer.innerHTML = '<p class="text-gray-500">ไม่มีข้อมูล</p>';
+                return;
+            }
+            
+            var recentRecords = records.slice(-5).reverse();
+            var html = '';
+            for (var i = 0; i < recentRecords.length; i++) {
+                var record = recentRecords[i];
+                var statusClass = 'status-' + (record.status || 'pending');
+                html += '<div class="record-card ' + statusClass + '">';
+                html += '<h4 class="font-semibold text-gray-800">' + record.subject + ' - ' + record.classRoom + '</h4>';
+                html += '<p>ครูประจำ: ' + record.regularTeacher + ' | วันที่: ' + record.date + '</p>';
+                html += '<span class="inline-block px-2 py-1 text-xs rounded ' + 
+                        (record.adminApproval === 'approved' ? 'bg-green-100 text-green-800' :
+                         record.adminApproval === 'rejected' || record.headApproval === 'rejected' ? 'bg-red-100 text-red-800' :
+                         'bg-yellow-100 text-yellow-800') + '">';
+                html += record.adminApproval === 'approved' ? 'อนุมัติแล้ว' :
+                        record.adminApproval === 'rejected' || record.headApproval === 'rejected' ? 'ไม่อนุมัติ' :
+                        'รอดำเนินการ';
+                html += '</span>';
+                html += '</div>';
+            }
+            recentContainer.innerHTML = html;
+        }
+
+        // Record action functions
+        function approveRecord(recordId) {
+            var record = records.find(function(r) { return r.id === recordId; });
+            if (record) {
+                record.headApproval = 'approved';
+                record.headReason = 'อนุมัติโดยหัวหน้าสาระ';
+                localStorage.setItem('teachingRecords', JSON.stringify(records));
+                showNotification('อนุมัติรายการเรียบร้อย', 'success');
+                loadHeadRecords();
+            }
+        }
+
+        function rejectRecord(recordId) {
+            var reason = prompt('เหตุผลที่ไม่อนุมัติ:');
+            if (reason) {
+                var record = records.find(function(r) { return r.id === recordId; });
+                if (record) {
+                    record.headApproval = 'rejected';
+                    record.headReason = reason;
+                    record.status = 'rejected';
+                    localStorage.setItem('teachingRecords', JSON.stringify(records));
+                    showNotification('ไม่อนุมัติรายการเรียบร้อย', 'success');
+                    loadHeadRecords();
+                }
+            }
+        }
+
+        function finalApprove(recordId) {
+            var record = records.find(function(r) { return r.id === recordId; });
+            if (record) {
+                record.adminApproval = 'approved';
+                record.adminReason = 'อนุมัติโดยรองกลุ่มบริหาร';
+                record.status = 'completed';
+                localStorage.setItem('teachingRecords', JSON.stringify(records));
+                showNotification('อนุมัติขั้นสุดท้ายเรียบร้อย', 'success');
+                loadAdminRecords();
+            }
+        }
+
+        function finalReject(recordId) {
+            var reason = prompt('เหตุผลที่ไม่อนุมัติ:');
+            if (reason) {
+                var record = records.find(function(r) { return r.id === recordId; });
+                if (record) {
+                    record.adminApproval = 'rejected';
+                    record.adminReason = reason;
+                    record.status = 'rejected';
+                    localStorage.setItem('teachingRecords', JSON.stringify(records));
+                    showNotification('ไม่อนุมัติรายการเรียบร้อย', 'success');
+                    loadAdminRecords();
+                }
+            }
+        }
+
+        function showSubstituteReportForm(recordId) {
+            var attendance = prompt('จำนวนนักเรียนที่เข้าเรียน:');
+            var behavior = prompt('พฤติกรรมของนักเรียน:');
+            var observations = prompt('ข้อสังเกตเพิ่มเติม:');
+            
+            if (attendance && behavior) {
+                var record = records.find(function(r) { return r.id === recordId; });
+                if (record) {
+                    record.substituteReport = {
+                        attendance: attendance,
+                        behavior: behavior,
+                        observations: observations || '',
+                        submittedAt: new Date().toLocaleString('th-TH')
+                    };
+                    localStorage.setItem('teachingRecords', JSON.stringify(records));
+                    showNotification('บันทึกผลการสอนเรียบร้อย', 'success');
+                    loadSubstituteRecords();
+                }
+            }
+        }
+
+        // User type change handler
+        document.getElementById('userType').addEventListener('change', function() {
+            var userType = this.value;
+            var passwordField = document.getElementById('passwordField');
+            
+            if (userType === 'head' || userType === 'admin') {
+                passwordField.classList.remove('hidden');
+            } else {
+                passwordField.classList.add('hidden');
+            }
+        });
+
+        // Teacher form submit handler
+        document.getElementById('teacherAssignmentForm').addEventListener('submit', submitTeacherForm);
+
+        // Initialize the app
         document.addEventListener('DOMContentLoaded', function() {
             console.log('Initializing teaching substitute system...');
             
-            // Setup event listeners
-            setupEventListeners();
-            
             // Initialize signature pad
-            initSignaturePad();
+            initSignaturePad('teacherSignaturePad');
             
             // Load settings and records
             loadSettings();
@@ -789,9 +1029,9 @@
             // Show menu by default
             showSection('menuSection');
             
-            // Show setup notification if no script URL
-            if (!appConfig.scriptUrl) {
-                setTimeout(() => {
+            // Show setup notification if no script URL configured
+            if (!appConfig.scriptUrl || appConfig.scriptUrl.includes('YOUR_DEPLOYMENT_ID')) {
+                setTimeout(function() {
                     showNotification('กรุณาตั้งค่า Google Apps Script URL ในเมนูตั้งค่า เพื่อเชื่อมต่อกับ Google Sheets', 'info', 10000);
                 }, 2000);
             }
