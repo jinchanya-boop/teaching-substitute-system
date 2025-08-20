@@ -102,12 +102,15 @@
             html += '.info-label { font-weight: 600; color: #374151; font-size: 14px; margin-bottom: 5px; }';
             html += '.info-value { color: #111827; font-size: 14px; border-bottom: 1px dotted #d1d5db; padding-bottom: 3px; min-height: 20px; }';
             html += '.content-text { background-color: #f9fafb; padding: 15px; border-radius: 6px; border-left: 4px solid #3b82f6; margin-bottom: 10px; }';
-            html += '.approval-section { background-color: #f0f9ff; border: 2px solid #0ea5e9; border-radius: 8px; padding: 20px; margin-top: 20px; }';
-            html += '.approval-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; }';
-            html += '.approval-item { text-align: center; padding: 15px; border: 1px solid #e0e7ff; border-radius: 6px; background-color: white; }';
-            html += '.approval-title { font-weight: 600; color: #1e40af; margin-bottom: 10px; }';
-            html += '.approval-status { color: #059669; font-weight: 600; margin-bottom: 5px; }';
-            html += '.signature-box { border: 1px solid #d1d5db; height: 80px; margin: 10px 0; border-radius: 4px; background-color: #fafafa; display: flex; align-items: center; justify-content: center; color: #9ca3af; font-size: 12px; }';
+            html += '.signature-section { background-color: #f0f9ff; border: 2px solid #0ea5e9; border-radius: 8px; padding: 20px; margin-top: 20px; }';
+            html += '.signature-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }';
+            html += '.signature-item { text-align: center; padding: 15px; border: 1px solid #e0e7ff; border-radius: 6px; background-color: white; }';
+            html += '.signature-title { font-weight: 600; color: #1e40af; margin-bottom: 10px; }';
+            html += '.signature-status { color: #059669; font-weight: 600; margin-bottom: 5px; }';
+            html += '.signature-box { border: 2px solid #d1d5db; height: 80px; margin: 10px 0; border-radius: 4px; background-color: #fafafa; display: flex; align-items: center; justify-content: center; color: #6b7280; font-size: 12px; }';
+            html += '.comment-section { background-color: #fffbeb; border: 1px solid #fbbf24; border-radius: 6px; padding: 15px; margin-top: 15px; }';
+            html += '.comment-title { font-weight: 600; color: #92400e; margin-bottom: 8px; }';
+            html += '.comment-text { color: #451a03; font-size: 14px; }';
             html += '.footer { margin-top: 40px; text-align: center; font-size: 12px; color: #6b7280; border-top: 1px solid #e5e7eb; padding-top: 20px; }';
             html += '.print-date { position: absolute; top: 20px; right: 20px; font-size: 12px; color: #6b7280; }';
             html += '@media print { body { margin: 0; } .no-print { display: none; } }';
@@ -130,8 +133,8 @@
             html += '<div class="info-item"><div class="info-label">เวลา:</div><div class="info-value">' + (record.time || 'ไม่ระบุ') + '</div></div>';
             html += '<div class="info-item"><div class="info-label">ชั้น/ห้อง:</div><div class="info-value">' + (record.classRoom || 'ไม่ระบุ') + '</div></div>';
             html += '<div class="info-item"><div class="info-label">วิชา:</div><div class="info-value">' + (record.subject || 'ไม่ระบุ') + '</div></div>';
-            html += '<div class="info-item"><div class="info-label">ครูประจำวิชา:</div><div class="info-value">' + (record.regularTeacher || 'ไม่ระบุ') + '</div></div>';
-            html += '<div class="info-item"><div class="info-label">ครูสอนแทน:</div><div class="info-value">' + (record.substituteTeacher || 'ไม่ระบุ') + '</div></div>';
+            html += '<div class="info-item"><div class="info-label">ครูประจำวิชา (ผู้มอบหมาย):</div><div class="info-value">' + (record.regularTeacher || 'ไม่ระบุ') + '</div></div>';
+            html += '<div class="info-item"><div class="info-label">ครูสอนแทน (ผู้รับมอบ):</div><div class="info-value">' + (record.substituteTeacher || 'ไม่ระบุ') + '</div></div>';
             html += '</div>';
             
             html += '<div class="info-label">เนื้อหาที่สอน:</div>';
@@ -153,45 +156,74 @@
                 html += '</div>';
                 html += '<div class="info-label">ข้อสังเกตเพิ่มเติม:</div>';
                 html += '<div class="content-text">' + (record.substituteReport.observations || 'ไม่มี') + '</div>';
+                
+                // เพิ่มความคิดเห็นของครูที่รับมอบ
+                if (record.substituteReport.teacherComment) {
+                    html += '<div class="comment-section">';
+                    html += '<div class="comment-title">ความคิดเห็นของครูที่รับมอบหมาย:</div>';
+                    html += '<div class="comment-text">' + record.substituteReport.teacherComment + '</div>';
+                    html += '</div>';
+                }
                 html += '</div>';
             }
 
-            html += '<div class="approval-section">';
-            html += '<div class="section-title">การอนุมัติ</div>';
-            html += '<div class="approval-grid">';
+            html += '<div class="signature-section">';
+            html += '<div class="section-title">การลงนามและการอนุมัติ</div>';
             
-            html += '<div class="approval-item">';
-            html += '<div class="approval-title">ครูประจำวิชา</div>';
-            html += '<div class="approval-status">✓ มอบหมาย</div>';
+            // แถวแรก: ครูผู้มอบและครูผู้รับมอบ
+            html += '<div class="signature-grid">';
+            html += '<div class="signature-item">';
+            html += '<div class="signature-title">ครูประจำวิชา (ผู้มอบหมาย)</div>';
+            html += '<div class="signature-status">ลงนาม</div>';
             html += '<div class="signature-box">ลายเซ็นครูประจำวิชา</div>';
-            html += '<div>' + (record.createdAt || '') + '</div>';
+            html += '<div style="margin-top: 5px;">ชื่อ: ' + (record.regularTeacher || '................................') + '</div>';
+            html += '<div style="font-size: 12px; color: #6b7280;">วันที่: ' + (record.createdAt || '................................') + '</div>';
             html += '</div>';
             
-            html += '<div class="approval-item">';
-            html += '<div class="approval-title">หัวหน้าสาระ</div>';
-            html += '<div class="approval-status">✓ อนุมัติ</div>';
+            html += '<div class="signature-item">';
+            html += '<div class="signature-title">ครูสอนแทน (ผู้รับมอบหมาย)</div>';
+            html += '<div class="signature-status">รับทราบและดำเนินการ</div>';
+            html += '<div class="signature-box">ลายเซ็นครูสอนแทน</div>';
+            html += '<div style="margin-top: 5px;">ชื่อ: ' + (record.substituteTeacher || '................................') + '</div>';
+            html += '<div style="font-size: 12px; color: #6b7280;">วันที่: ' + (record.substituteReport?.submittedAt || '................................') + '</div>';
+            html += '</div>';
+            html += '</div>';
+            
+            // แถวที่สอง: หัวหน้าสาระและรองวิชาการ
+            html += '<div class="signature-grid">';
+            html += '<div class="signature-item">';
+            html += '<div class="signature-title">หัวหน้าสาระ</div>';
+            html += '<div class="signature-status">' + (record.headApproval === 'approved' ? 'อนุมัติ' : 'รอการอนุมัติ') + '</div>';
             html += '<div class="signature-box">ลายเซ็นหัวหน้าสาระ</div>';
-            html += '<div>' + (record.headReason || '') + '</div>';
+            html += '<div style="margin-top: 5px;">ชื่อ: ................................</div>';
+            html += '<div style="font-size: 12px; color: #6b7280;">วันที่: ................................</div>';
+            if (record.headReason) {
+                html += '<div class="comment-section" style="margin-top: 10px;">';
+                html += '<div class="comment-title">ความเห็น:</div>';
+                html += '<div class="comment-text">' + record.headReason + '</div>';
+                html += '</div>';
+            }
             html += '</div>';
             
-            html += '<div class="approval-item">';
-            html += '<div class="approval-title">รองกลุ่มบริหาร</div>';
-            html += '<div class="approval-status">✓ อนุมัติขั้นสุดท้าย</div>';
-            html += '<div class="signature-box">ลายเซ็นรองกลุ่มบริหาร</div>';
-            html += '<div>' + (record.finalApprovalDate || '') + '</div>';
+            html += '<div class="signature-item">';
+            html += '<div class="signature-title">รองผู้อำนวยการฝ่ายวิชาการ</div>';
+            html += '<div class="signature-status">' + (record.adminApproval === 'approved' ? 'อนุมัติขั้นสุดท้าย' : 'รอการอนุมัติ') + '</div>';
+            html += '<div class="signature-box">ลายเซ็นรองผู้อำนวยการฯ</div>';
+            html += '<div style="margin-top: 5px;">ชื่อ: ................................</div>';
+            html += '<div style="font-size: 12px; color: #6b7280;">วันที่: ' + (record.finalApprovalDate || '................................') + '</div>';
+            if (record.adminReason) {
+                html += '<div class="comment-section" style="margin-top: 10px;">';
+                html += '<div class="comment-title">ความเห็น:</div>';
+                html += '<div class="comment-text">' + record.adminReason + '</div>';
+                html += '</div>';
+            }
             html += '</div>';
-            
-            html += '</div>';
-            
-            html += '<div style="margin-top: 20px;">';
-            html += '<div class="info-label">เหตุผลการอนุมัติจากรองกลุ่มบริหาร:</div>';
-            html += '<div class="content-text">' + (record.adminReason || 'ไม่ระบุ') + '</div>';
             html += '</div>';
             html += '</div>';
 
             html += '<div class="footer">';
             html += '<div>เอกสารนี้ออกโดยระบบบันทึกการสอนแทน - โรงเรียนสา</div>';
-            html += '<div>สถานะ: อนุมัติครบทุกขั้นตอนแล้ว | วันที่สร้างเอกสาร: ' + currentDate + '</div>';
+            html += '<div>สถานะ: ' + (record.status === 'completed' ? 'อนุมัติครบทุกขั้นตอนแล้ว' : 'อยู่ระหว่างดำเนินการ') + ' | วันที่สร้างเอกสาร: ' + currentDate + '</div>';
             html += '</div>';
             
             html += '</body>';
