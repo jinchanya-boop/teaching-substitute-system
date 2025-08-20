@@ -869,18 +869,35 @@
             var html = '';
             for (var i = 0; i < pendingRecords.length; i++) {
                 var record = pendingRecords[i];
-                html += '<div class="record-card status-pending">';
+                html += '<div class="record-card status-pending mb-6">';
                 html += '<h4 class="font-semibold text-gray-800">วิชา: ' + record.subject + '</h4>';
                 html += '<p>ชั้น: ' + record.classRoom + ' | วันที่: ' + record.date + ' | เวลา: ' + record.time + '</p>';
                 html += '<p>ครูประจำ: ' + record.regularTeacher + ' | ครูสอนแทน: ' + record.substituteTeacher + '</p>';
                 html += '<p>เนื้อหา: ' + record.content + '</p>';
+                
+                // Add signature area for head approval
+                html += '<div class="mt-4 border-t pt-4">';
+                html += '<h5 class="font-medium text-gray-700 mb-2">ลายเซ็นหัวหน้าสาระ (สำหรับการอนุมัติ)</h5>';
+                html += '<canvas id="headSignature_' + record.id + '" width="400" height="120" ';
+                html += 'class="signature-pad w-full bg-white rounded cursor-crosshair border-2 border-green-300 mb-2"></canvas>';
+                html += '<div class="flex space-x-2 mb-4">';
+                html += '<button onclick="clearSignature(\'headSignature_' + record.id + '\')" ';
+                html += 'class="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600">ลบลายเซ็น</button>';
+                html += '</div>';
+                html += '</div>';
+                
                 html += '<div class="mt-4 space-x-2">';
-                html += '<button onclick="approveRecord(\'' + record.id + '\')" class="bg-green-600 text-white px-4 py-2 rounded">อนุมัติ</button>';
+                html += '<button onclick="approveRecordWithSignature(\'' + record.id + '\')" class="bg-green-600 text-white px-4 py-2 rounded">อนุมัติ</button>';
                 html += '<button onclick="rejectRecord(\'' + record.id + '\')" class="bg-red-600 text-white px-4 py-2 rounded">ไม่อนุมัติ</button>';
                 html += '</div>';
                 html += '</div>';
             }
             container.innerHTML = html;
+            
+            // Initialize signature pads for each record
+            for (var i = 0; i < pendingRecords.length; i++) {
+                initSignaturePad('headSignature_' + pendingRecords[i].id);
+            }
         }
 
         function loadSubstituteRecords() {
@@ -1088,6 +1105,81 @@
                 record.headReason = 'อนุมัติโดยหัวหน้าสาระ';
                 localStorage.setItem('teachingRecords', JSON.stringify(records));
                 showNotification('อนุมัติรายการเรียบร้อย', 'success');
+                loadHeadRecords();
+            }
+        }
+
+        function approveRecordWithSignature(recordId) {
+            var canvas = document.getElementById('headSignature_' + recordId);
+            if (!canvas) {
+                showNotification('ไม่พบพื้นที่ลายเซ็น', 'error');
+                return;
+            }
+
+            // Check if signature exists
+            var ctx = canvas.getContext('2d');
+            var imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            var hasSignature = false;
+            
+            for (var i = 0; i < imageData.data.length; i += 4) {
+                var r = imageData.data[i];
+                var g = imageData.data[i + 1];
+                var b = imageData.data[i + 2];
+                var a = imageData.data[i + 3];
+                
+                if (a > 0 && (r < 255 || g < 255 || b < 255)) {
+                    hasSignature = true;
+                    break;
+                }
+            }
+            
+            if (!hasSignature) {
+                showNotification('กรุณาเซ็นลายเซ็นก่อนอนุมัติ', 'error');
+                return;
+            }
+
+            var signatureData = canvas.toDataURL();
+            var record = records.find(function(r) { return r.id === recordId; });
+            
+            if (record) {
+                record.headApproval = 'approved';
+                record.headReason = 'อนุมัติโดยหัวหน้าสาระพร้อมลายเซ็น';
+                record.headSignature = signatureData;
+                
+                // Update localStorage
+                localStorage.setItem('teachingRecords', JSON.stringify(records));
+                
+                // Send update to Google Sheet
+                if (appConfig.scriptUrl) {
+                    var updateData = {
+                        action: 'updateRecord',
+                        recordId: recordId,
+                        updateData: {
+                            headApproval: 'approved',
+                            headReason: 'อนุมัติโดยหัวหน้าสาระพร้อมลายเซ็น'
+                        },
+                        headSignature: signatureData,
+                        sheetId: appConfig.sheetId,
+                        folderId: appConfig.folderId
+                    };
+
+                    fetch(appConfig.scriptUrl, {
+                        method: 'POST',
+                        mode: 'no-cors',
+                        headers: {
+                            'Content-Type': 'text/plain',
+                        },
+                        body: JSON.stringify(updateData)
+                    })
+                    .then(function() {
+                        console.log('Head approval sent to Google Sheet');
+                    })
+                    .catch(function(error) {
+                        console.error('Failed to send head approval to Google Sheet:', error);
+                    });
+                }
+                
+                showNotification('อนุมัติรายการเรียบร้อย พร้อมบันทึกลายเซ็น', 'success');
                 loadHeadRecords();
             }
         }
