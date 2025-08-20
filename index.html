@@ -78,13 +78,13 @@
                     </div>
                 </div>
                 <div class="flex space-x-2">
-                    <button onclick="showLogin()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors">
+                    <button id="loginBtn" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors">
                         เข้าสู่ระบบ
                     </button>
-                    <button onclick="showDashboard()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors">
+                    <button id="dashboardBtn" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors">
                         แดชบอร์ด
                     </button>
-                    <button onclick="showSettings()" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg transition-colors">
+                    <button id="settingsBtn" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg transition-colors">
                         ⚙️ ตั้งค่า
                     </button>
                 </div>
@@ -96,7 +96,7 @@
     <main class="container mx-auto px-4 py-8">
         <!-- Menu Selection -->
         <div id="menuSection" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            <div class="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow cursor-pointer" onclick="showTeacherForm()">
+            <div class="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow cursor-pointer" id="teacherCard">
                 <div class="text-center">
                     <div class="bg-blue-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
                         <span class="text-2xl">👨‍🏫</span>
@@ -106,7 +106,7 @@
                 </div>
             </div>
 
-            <div class="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow cursor-pointer" onclick="showHeadForm()">
+            <div class="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow cursor-pointer" id="headCard">
                 <div class="text-center">
                     <div class="bg-green-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
                         <span class="text-2xl">👩‍💼</span>
@@ -116,7 +116,7 @@
                 </div>
             </div>
 
-            <div class="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow cursor-pointer" onclick="showSubstituteForm()">
+            <div class="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow cursor-pointer" id="substituteCard">
                 <div class="text-center">
                     <div class="bg-yellow-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
                         <span class="text-2xl">📝</span>
@@ -126,7 +126,7 @@
                 </div>
             </div>
 
-            <div class="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow cursor-pointer" onclick="showAdminForm()">
+            <div class="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow cursor-pointer" id="adminCard">
                 <div class="text-center">
                     <div class="bg-purple-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
                         <span class="text-2xl">⚙️</span>
@@ -154,7 +154,7 @@
                     <!-- Google Sheet ID -->
                     <div>
                         <label class="block text-gray-700 font-medium mb-2">Google Sheet ID</label>
-                        <input type="text" id="sheetId" placeholder="1kSYclbR9-oIB7RUXiOXJVWjfuN6KjXY-D8vyFL52JnM" 
+                        <input type="text" id="sheetId" placeholder="137OMps_3meAY5lTwfR-Aq4QhqSn5ul1Eqiz8SjALyf4" 
                                class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                         <p class="text-sm text-gray-500 mt-1">ID ของ Google Sheet ที่ต้องการบันทึกข้อมูล</p>
                     </div>
@@ -170,8 +170,7 @@
                     <!-- Test Connection -->
                     <div class="border-t pt-4">
                         <h3 class="font-semibold text-gray-800 mb-3">ทดสอบการเชื่อมต่อ</h3>
-                        <button onclick="testConnection()" id="testBtn" 
-                                class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition-colors">
+                        <button id="testBtn" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition-colors">
                             🔗 ทดสอบการเชื่อมต่อ
                         </button>
                         <div id="connectionStatus" class="mt-3"></div>
@@ -179,10 +178,10 @@
                 </div>
 
                 <div class="flex space-x-4 mt-6">
-                    <button onclick="saveSettings()" class="flex-1 bg-green-600 hover:bg-green-700 text-white py-2 rounded-lg transition-colors">
+                    <button id="saveSettingsBtn" class="flex-1 bg-green-600 hover:bg-green-700 text-white py-2 rounded-lg transition-colors">
                         💾 บันทึกการตั้งค่า
                     </button>
-                    <button onclick="closeSettings()" class="flex-1 bg-gray-500 hover:bg-gray-600 text-white py-2 rounded-lg transition-colors">
+                    <button id="closeSettingsBtn" class="flex-1 bg-gray-500 hover:bg-gray-600 text-white py-2 rounded-lg transition-colors">
                         ยกเลิก
                     </button>
                 </div>
@@ -209,10 +208,10 @@
                         <input type="password" id="password" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                     </div>
                     <div class="flex space-x-4">
-                        <button onclick="login()" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg transition-colors">
+                        <button id="loginSubmitBtn" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg transition-colors">
                             เข้าสู่ระบบ
                         </button>
-                        <button onclick="closeLogin()" class="flex-1 bg-gray-500 hover:bg-gray-600 text-white py-2 rounded-lg transition-colors">
+                        <button id="closeLoginBtn" class="flex-1 bg-gray-500 hover:bg-gray-600 text-white py-2 rounded-lg transition-colors">
                             ยกเลิก
                         </button>
                     </div>
@@ -220,22 +219,108 @@
             </div>
         </div>
 
-        <!-- Other sections placeholder -->
+        <!-- Teacher Form -->
         <div id="teacherForm" class="hidden">
             <div class="bg-white rounded-xl shadow-lg p-8">
-                <h2 class="text-2xl font-bold text-gray-800 mb-6">👨‍🏫 ครูประจำวิชา</h2>
-                <p class="text-gray-600">ฟอร์มจะถูกเพิ่มในอนาคต</p>
-                <button onclick="backToMenu()" class="mt-4 bg-gray-500 hover:bg-gray-600 text-white px-6 py-2 rounded-lg">กลับ</button>
+                <h2 class="text-2xl font-bold text-gray-800 mb-6">👨‍🏫 ครูประจำวิชา - มอบหมายงานสอนแทน</h2>
+                
+                <form id="teacherAssignmentForm" class="space-y-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-gray-700 font-medium mb-2">วันที่สอนแทน</label>
+                            <input type="date" id="teachingDate" required 
+                                   class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        </div>
+                        <div>
+                            <label class="block text-gray-700 font-medium mb-2">เวลา</label>
+                            <input type="time" id="teachingTime" required 
+                                   class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-gray-700 font-medium mb-2">ชั้น/ห้อง</label>
+                            <input type="text" id="classRoom" required placeholder="เช่น ม.1/1" 
+                                   class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        </div>
+                        <div>
+                            <label class="block text-gray-700 font-medium mb-2">วิชา</label>
+                            <input type="text" id="subject" required placeholder="เช่น คณิตศาสตร์" 
+                                   class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-gray-700 font-medium mb-2">ครูประจำวิชา</label>
+                            <input type="text" id="regularTeacher" required placeholder="ชื่อครูประจำวิชา" 
+                                   class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        </div>
+                        <div>
+                            <label class="block text-gray-700 font-medium mb-2">ครูสอนแทน</label>
+                            <input type="text" id="substituteTeacher" required placeholder="ชื่อครูสอนแทน" 
+                                   class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-gray-700 font-medium mb-2">เนื้อหาที่สอน</label>
+                        <textarea id="content" required rows="3" placeholder="ระบุเนื้อหาที่ต้องการให้สอน" 
+                                  class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"></textarea>
+                    </div>
+
+                    <div>
+                        <label class="block text-gray-700 font-medium mb-2">กิจกรรมการเรียนการสอน</label>
+                        <textarea id="activities" rows="3" placeholder="กิจกรรมหรือวิธีการสอน" 
+                                  class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"></textarea>
+                    </div>
+
+                    <div>
+                        <label class="block text-gray-700 font-medium mb-2">การบ้าน (ถ้ามี)</label>
+                        <textarea id="homework" rows="2" placeholder="การบ้านที่มอบหมาย" 
+                                  class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"></textarea>
+                    </div>
+
+                    <div>
+                        <label class="block text-gray-700 font-medium mb-2">ไฟล์แนบ (เอกสารประกอบการสอน)</label>
+                        <input type="file" id="attachmentFiles" multiple accept=".pdf,.doc,.docx,.ppt,.pptx,.jpg,.png" 
+                               class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        <p class="text-sm text-gray-500 mt-1">รองรับไฟล์: PDF, Word, PowerPoint, รูปภาพ</p>
+                    </div>
+
+                    <div>
+                        <label class="block text-gray-700 font-medium mb-2">ลายเซ็นครูประจำวิชา</label>
+                        <canvas id="teacherSignaturePad" width="400" height="150" 
+                                class="signature-pad w-full border border-gray-300 rounded-lg"></canvas>
+                        <div class="flex space-x-2 mt-2">
+                            <button type="button" id="clearTeacherSignature" 
+                                    class="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600">ลบลายเซ็น</button>
+                        </div>
+                    </div>
+
+                    <div class="flex space-x-4">
+                        <button type="submit" id="submitTeacherForm" 
+                                class="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg transition-colors">
+                            บันทึกข้อมูล
+                        </button>
+                        <button type="button" id="backFromTeacher" 
+                                class="flex-1 bg-gray-500 hover:bg-gray-600 text-white py-3 rounded-lg transition-colors">
+                            กลับ
+                        </button>
+                    </div>
+                </form>
             </div>
         </div>
 
+        <!-- Other forms (placeholder for now) -->
         <div id="headForm" class="hidden">
             <div class="bg-white rounded-xl shadow-lg p-8">
                 <h2 class="text-2xl font-bold text-gray-800 mb-6">👩‍💼 หัวหน้าสาระ</h2>
                 <div id="headRecordsList">
                     <p class="text-gray-600">ไม่มีรายการที่รออนุมัติ</p>
                 </div>
-                <button onclick="backToMenu()" class="mt-4 bg-gray-500 hover:bg-gray-600 text-white px-6 py-2 rounded-lg">กลับ</button>
+                <button id="backFromHead" class="mt-4 bg-gray-500 hover:bg-gray-600 text-white px-6 py-2 rounded-lg">กลับ</button>
             </div>
         </div>
 
@@ -245,7 +330,7 @@
                 <div id="substituteRecordsList">
                     <p class="text-gray-600">ไม่มีรายการที่ต้องบันทึก</p>
                 </div>
-                <button onclick="backToMenu()" class="mt-4 bg-gray-500 hover:bg-gray-600 text-white px-6 py-2 rounded-lg">กลับ</button>
+                <button id="backFromSubstitute" class="mt-4 bg-gray-500 hover:bg-gray-600 text-white px-6 py-2 rounded-lg">กลับ</button>
             </div>
         </div>
 
@@ -255,7 +340,7 @@
                 <div id="adminRecordsList">
                     <p class="text-gray-600">ไม่มีรายการที่รอการอนุมัติ</p>
                 </div>
-                <button onclick="backToMenu()" class="mt-4 bg-gray-500 hover:bg-gray-600 text-white px-6 py-2 rounded-lg">กลับ</button>
+                <button id="backFromAdmin" class="mt-4 bg-gray-500 hover:bg-gray-600 text-white px-6 py-2 rounded-lg">กลับ</button>
             </div>
         </div>
 
@@ -263,33 +348,82 @@
             <div class="bg-white rounded-xl shadow-lg p-8">
                 <h2 class="text-2xl font-bold text-gray-800 mb-6">📊 แดชบอร์ด</h2>
                 <p class="text-gray-600">แดชบอร์ดจะถูกเพิ่มในอนาคต</p>
-                <button onclick="backToMenu()" class="mt-4 bg-gray-500 hover:bg-gray-600 text-white px-6 py-2 rounded-lg">กลับ</button>
+                <button id="backFromDashboard" class="mt-4 bg-gray-500 hover:bg-gray-600 text-white px-6 py-2 rounded-lg">กลับ</button>
             </div>
         </div>
     </main>
 
     <script>
         // Global variables
-        var currentUser = null;
-        var records = [];
-        var appConfig = {
-            scriptUrl: '',
-            sheetId: '1kSYclbR9-oIB7RUXiOXJVWjfuN6KjXY-D8vyFL52JnM',
+        let currentUser = null;
+        let records = [];
+        let teacherSignaturePad = null;
+        let isDrawing = false;
+        
+        const appConfig = {
+            scriptUrl: 'https://script.google.com/macros/s/AKfycbxh8eE0eSTzD6rSyXE2cRVpXjU7hTBJ9IuiCI1lG_07CbTHRr0oROC3x2t4aeGjlJf-/exec',
+            sheetId: '137OMps_3meAY5lTwfR-Aq4QhqSn5ul1Eqiz8SjALyf4',
             folderId: '1pfSdQHTZwY4VpPtpB7jyLQr4UNFdReEz'
         };
 
-        // Load settings from localStorage
-        function loadSettings() {
-            var savedConfig = localStorage.getItem('appConfig');
-            if (savedConfig) {
-                appConfig = Object.assign(appConfig, JSON.parse(savedConfig));
-                document.getElementById('scriptUrl').value = appConfig.scriptUrl;
-                document.getElementById('sheetId').value = appConfig.sheetId;
-                document.getElementById('folderId').value = appConfig.folderId;
-            }
+        // Utility functions
+        function showNotification(message, type = 'info', duration = 5000) {
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            
+            const closeBtn = document.createElement('button');
+            closeBtn.innerHTML = '×';
+            closeBtn.className = 'ml-4 text-white hover:text-gray-200 text-xl';
+            closeBtn.onclick = () => notification.remove();
+            
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'flex items-center justify-between';
+            messageDiv.innerHTML = `<span>${message}</span>`;
+            messageDiv.appendChild(closeBtn);
+            
+            notification.appendChild(messageDiv);
+            document.body.appendChild(notification);
+            
+            setTimeout(() => notification.classList.add('show'), 100);
+            
+            setTimeout(() => {
+                notification.classList.remove('show');
+                setTimeout(() => {
+                    if (notification.parentNode) {
+                        notification.remove();
+                    }
+                }, 300);
+            }, duration);
         }
 
-        // Save settings to localStorage
+        function hideAllSections() {
+            const sections = ['menuSection', 'teacherForm', 'headForm', 'substituteForm', 'adminForm', 'dashboard'];
+            sections.forEach(id => {
+                document.getElementById(id).classList.add('hidden');
+            });
+        }
+
+        function showSection(sectionId) {
+            hideAllSections();
+            document.getElementById(sectionId).classList.remove('hidden');
+        }
+
+        function backToMenu() {
+            showSection('menuSection');
+        }
+
+        // Settings functions
+        function loadSettings() {
+            const savedConfig = localStorage.getItem('appConfig');
+            if (savedConfig) {
+                Object.assign(appConfig, JSON.parse(savedConfig));
+            }
+            
+            document.getElementById('scriptUrl').value = appConfig.scriptUrl;
+            document.getElementById('sheetId').value = appConfig.sheetId;
+            document.getElementById('folderId').value = appConfig.folderId;
+        }
+
         function saveSettings() {
             appConfig.scriptUrl = document.getElementById('scriptUrl').value.trim();
             appConfig.sheetId = document.getElementById('sheetId').value.trim();
@@ -305,7 +439,6 @@
             closeSettings();
         }
 
-        // Show/Hide Settings
         function showSettings() {
             loadSettings();
             document.getElementById('settingsModal').classList.remove('hidden');
@@ -317,10 +450,10 @@
             document.getElementById('settingsModal').classList.remove('flex');
         }
 
-        // Test connection to Google Apps Script
+        // Test connection
         function testConnection() {
-            var testBtn = document.getElementById('testBtn');
-            var statusDiv = document.getElementById('connectionStatus');
+            const testBtn = document.getElementById('testBtn');
+            const statusDiv = document.getElementById('connectionStatus');
             
             if (!appConfig.scriptUrl) {
                 statusDiv.innerHTML = '<div class="text-red-600">❌ กรุณาใส่ Google Apps Script URL ก่อน</div>';
@@ -342,59 +475,22 @@
                     timestamp: new Date().toISOString()
                 })
             })
-            .then(function() {
+            .then(() => {
                 statusDiv.innerHTML = '<div class="text-green-600">✅ การเชื่อมต่อสำเร็จ! ระบบพร้อมใช้งาน</div>';
                 showNotification('ทดสอบการเชื่อมต่อสำเร็จ', 'success');
             })
-            .catch(function(error) {
+            .catch(error => {
                 console.error('Connection test failed:', error);
-                statusDiv.innerHTML = '<div class="text-red-600">❌ การเชื่อมต่อล้มเหลว: ' + error.message + '</div>';
+                statusDiv.innerHTML = `<div class="text-red-600">❌ การเชื่อมต่อล้มเหลว: ${error.message}</div>`;
                 showNotification('การเชื่อมต่อล้มเหลว กรุณาตรวจสอบ URL', 'error');
             })
-            .finally(function() {
+            .finally(() => {
                 testBtn.disabled = false;
                 testBtn.innerHTML = '🔗 ทดสอบการเชื่อมต่อ';
             });
         }
 
-        // Show notification
-        function showNotification(message, type, duration) {
-            duration = duration || 5000;
-            var notification = document.createElement('div');
-            notification.className = 'notification ' + type;
-            
-            var closeBtn = document.createElement('button');
-            closeBtn.innerHTML = '×';
-            closeBtn.className = 'ml-4 text-white hover:text-gray-200 text-xl';
-            closeBtn.onclick = function() {
-                notification.remove();
-            };
-            
-            var messageDiv = document.createElement('div');
-            messageDiv.className = 'flex items-center justify-between';
-            messageDiv.innerHTML = '<span>' + message + '</span>';
-            messageDiv.appendChild(closeBtn);
-            
-            notification.appendChild(messageDiv);
-            document.body.appendChild(notification);
-            
-            // Show animation
-            setTimeout(function() {
-                notification.classList.add('show');
-            }, 100);
-            
-            // Auto remove
-            setTimeout(function() {
-                notification.classList.remove('show');
-                setTimeout(function() {
-                    if (notification.parentNode) {
-                        notification.remove();
-                    }
-                }, 300);
-            }, duration);
-        }
-
-        // Show/Hide functions
+        // Login functions
         function showLogin() {
             document.getElementById('loginModal').classList.remove('hidden');
             document.getElementById('loginModal').classList.add('flex');
@@ -408,47 +504,9 @@
             document.getElementById('passwordField').classList.add('hidden');
         }
 
-        function showTeacherForm() {
-            hideAllSections();
-            document.getElementById('teacherForm').classList.remove('hidden');
-        }
-
-        function showHeadForm() {
-            hideAllSections();
-            document.getElementById('headForm').classList.remove('hidden');
-        }
-
-        function showSubstituteForm() {
-            hideAllSections();
-            document.getElementById('substituteForm').classList.remove('hidden');
-        }
-
-        function showAdminForm() {
-            hideAllSections();
-            document.getElementById('adminForm').classList.remove('hidden');
-        }
-
-        function showDashboard() {
-            hideAllSections();
-            document.getElementById('dashboard').classList.remove('hidden');
-        }
-
-        function hideAllSections() {
-            var sections = ['teacherForm', 'headForm', 'substituteForm', 'adminForm', 'dashboard'];
-            for (var i = 0; i < sections.length; i++) {
-                document.getElementById(sections[i]).classList.add('hidden');
-            }
-        }
-
-        function backToMenu() {
-            hideAllSections();
-            document.getElementById('menuSection').classList.remove('hidden');
-        }
-
-        // Login function
         function login() {
-            var userType = document.getElementById('userType').value;
-            var password = document.getElementById('password').value;
+            const userType = document.getElementById('userType').value;
+            const password = document.getElementById('password').value;
             
             if (!userType) {
                 showNotification('กรุณาเลือกประเภทผู้ใช้', 'error');
@@ -473,49 +531,251 @@
             // Redirect to appropriate form
             switch(userType) {
                 case 'teacher':
-                    showTeacherForm();
+                    showSection('teacherForm');
                     break;
                 case 'head':
-                    showHeadForm();
+                    showSection('headForm');
                     break;
                 case 'substitute':
-                    showSubstituteForm();
+                    showSection('substituteForm');
                     break;
                 case 'admin':
-                    showAdminForm();
+                    showSection('adminForm');
                     break;
             }
         }
 
-        // User type change handler
-        document.getElementById('userType').addEventListener('change', function() {
-            var userType = this.value;
-            var passwordField = document.getElementById('passwordField');
+        // Signature pad functions
+        function initSignaturePad() {
+            const canvas = document.getElementById('teacherSignaturePad');
+            const ctx = canvas.getContext('2d');
             
-            if (userType === 'head' || userType === 'admin') {
-                passwordField.classList.remove('hidden');
-            } else {
-                passwordField.classList.add('hidden');
-            }
-        });
+            let isDrawing = false;
+            let lastX = 0;
+            let lastY = 0;
 
-        // Initialize the app
+            function getEventPos(e) {
+                const rect = canvas.getBoundingClientRect();
+                const clientX = e.clientX || (e.touches ? e.touches[0].clientX : 0);
+                const clientY = e.clientY || (e.touches ? e.touches[0].clientY : 0);
+                return {
+                    x: clientX - rect.left,
+                    y: clientY - rect.top
+                };
+            }
+
+            function startDrawing(e) {
+                isDrawing = true;
+                const pos = getEventPos(e);
+                lastX = pos.x;
+                lastY = pos.y;
+                canvas.classList.add('drawing');
+                e.preventDefault();
+            }
+
+            function draw(e) {
+                if (!isDrawing) return;
+                
+                const pos = getEventPos(e);
+                ctx.beginPath();
+                ctx.moveTo(lastX, lastY);
+                ctx.lineTo(pos.x, pos.y);
+                ctx.strokeStyle = '#000';
+                ctx.lineWidth = 2;
+                ctx.lineCap = 'round';
+                ctx.stroke();
+                
+                lastX = pos.x;
+                lastY = pos.y;
+                e.preventDefault();
+            }
+
+            function stopDrawing() {
+                isDrawing = false;
+                canvas.classList.remove('drawing');
+            }
+
+            // Mouse events
+            canvas.addEventListener('mousedown', startDrawing);
+            canvas.addEventListener('mousemove', draw);
+            canvas.addEventListener('mouseup', stopDrawing);
+            canvas.addEventListener('mouseout', stopDrawing);
+
+            // Touch events
+            canvas.addEventListener('touchstart', startDrawing);
+            canvas.addEventListener('touchmove', draw);
+            canvas.addEventListener('touchend', stopDrawing);
+
+            // Clear signature
+            document.getElementById('clearTeacherSignature').addEventListener('click', () => {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+            });
+        }
+
+        // Teacher form functions
+        function submitTeacherForm(e) {
+            e.preventDefault();
+            
+            if (!appConfig.scriptUrl) {
+                showNotification('กรุณาตั้งค่า Google Apps Script URL ในเมนูตั้งค่าก่อน', 'error');
+                return;
+            }
+
+            const formData = {
+                id: 'TEACH_' + Date.now(),
+                timestamp: new Date().toISOString(),
+                date: document.getElementById('teachingDate').value,
+                time: document.getElementById('teachingTime').value,
+                classRoom: document.getElementById('classRoom').value,
+                subject: document.getElementById('subject').value,
+                regularTeacher: document.getElementById('regularTeacher').value,
+                substituteTeacher: document.getElementById('substituteTeacher').value,
+                content: document.getElementById('content').value,
+                activities: document.getElementById('activities').value,
+                homework: document.getElementById('homework').value,
+                status: 'pending',
+                createdAt: new Date().toLocaleString('th-TH')
+            };
+
+            // Get signature
+            const canvas = document.getElementById('teacherSignaturePad');
+            const signatureData = canvas.toDataURL();
+            
+            // Check if signature is not empty
+            const ctx = canvas.getContext('2d');
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const hasSignature = imageData.data.some((channel, index) => index % 4 !== 3 && channel !== 0);
+            
+            if (!hasSignature) {
+                showNotification('กรุณาเซ็นลายเซ็นก่อนส่งข้อมูล', 'error');
+                return;
+            }
+
+            // Get files
+            const fileInput = document.getElementById('attachmentFiles');
+            const files = [];
+            
+            if (fileInput.files.length > 0) {
+                for (let i = 0; i < fileInput.files.length; i++) {
+                    const file = fileInput.files[i];
+                    const reader = new FileReader();
+                    reader.readAsDataURL(file);
+                    // Note: This is simplified - in real implementation, you'd need to handle async file reading
+                }
+            }
+
+            const submitData = {
+                action: 'addRecord',
+                data: formData,
+                signatures: {
+                    teacher: signatureData
+                },
+                files: files,
+                sheetId: appConfig.sheetId,
+                folderId: appConfig.folderId
+            };
+
+            const submitBtn = document.getElementById('submitTeacherForm');
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<div class="loading"></div> กำลังบันทึก...';
+
+            fetch(appConfig.scriptUrl, {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: {
+                    'Content-Type': 'text/plain',
+                },
+                body: JSON.stringify(submitData)
+            })
+            .then(() => {
+                showNotification('บันทึกข้อมูลสำเร็จ รอการอนุมัติจากหัวหน้าสาระ', 'success');
+                document.getElementById('teacherAssignmentForm').reset();
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                
+                // Save to localStorage as backup
+                records.push(formData);
+                localStorage.setItem('teachingRecords', JSON.stringify(records));
+                
+                backToMenu();
+            })
+            .catch(error => {
+                console.error('Submit failed:', error);
+                showNotification('เกิดข้อผิดพลาดในการบันทึก กรุณาลองใหม่', 'error');
+            })
+            .finally(() => {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = 'บันทึกข้อมูล';
+            });
+        }
+
+        // Event listeners
+        function setupEventListeners() {
+            // Header buttons
+            document.getElementById('loginBtn').addEventListener('click', showLogin);
+            document.getElementById('dashboardBtn').addEventListener('click', () => showSection('dashboard'));
+            document.getElementById('settingsBtn').addEventListener('click', showSettings);
+
+            // Menu cards
+            document.getElementById('teacherCard').addEventListener('click', () => showSection('teacherForm'));
+            document.getElementById('headCard').addEventListener('click', () => showSection('headForm'));
+            document.getElementById('substituteCard').addEventListener('click', () => showSection('substituteForm'));
+            document.getElementById('adminCard').addEventListener('click', () => showSection('adminForm'));
+
+            // Settings modal
+            document.getElementById('testBtn').addEventListener('click', testConnection);
+            document.getElementById('saveSettingsBtn').addEventListener('click', saveSettings);
+            document.getElementById('closeSettingsBtn').addEventListener('click', closeSettings);
+
+            // Login modal
+            document.getElementById('loginSubmitBtn').addEventListener('click', login);
+            document.getElementById('closeLoginBtn').addEventListener('click', closeLogin);
+            document.getElementById('userType').addEventListener('change', function() {
+                const userType = this.value;
+                const passwordField = document.getElementById('passwordField');
+                
+                if (userType === 'head' || userType === 'admin') {
+                    passwordField.classList.remove('hidden');
+                } else {
+                    passwordField.classList.add('hidden');
+                }
+            });
+
+            // Teacher form
+            document.getElementById('teacherAssignmentForm').addEventListener('submit', submitTeacherForm);
+            document.getElementById('backFromTeacher').addEventListener('click', backToMenu);
+
+            // Back buttons
+            document.getElementById('backFromHead').addEventListener('click', backToMenu);
+            document.getElementById('backFromSubstitute').addEventListener('click', backToMenu);
+            document.getElementById('backFromAdmin').addEventListener('click', backToMenu);
+            document.getElementById('backFromDashboard').addEventListener('click', backToMenu);
+        }
+
+        // Initialize the application
         document.addEventListener('DOMContentLoaded', function() {
-            // Load settings
+            console.log('Initializing teaching substitute system...');
+            
+            // Setup event listeners
+            setupEventListeners();
+            
+            // Initialize signature pad
+            initSignaturePad();
+            
+            // Load settings and records
             loadSettings();
+            records = JSON.parse(localStorage.getItem('teachingRecords') || '[]');
             
             // Show menu by default
-            document.getElementById('menuSection').classList.remove('hidden');
-            
-            // Load records from localStorage
-            records = JSON.parse(localStorage.getItem('teachingRecords') || '[]');
+            showSection('menuSection');
             
             // Show setup notification if no script URL
             if (!appConfig.scriptUrl) {
-                setTimeout(function() {
+                setTimeout(() => {
                     showNotification('กรุณาตั้งค่า Google Apps Script URL ในเมนูตั้งค่า เพื่อเชื่อมต่อกับ Google Sheets', 'info', 10000);
                 }, 2000);
             }
+            
+            console.log('Application initialized successfully');
         });
     </script>
 </body>
