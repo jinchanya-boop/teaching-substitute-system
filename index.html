@@ -17,6 +17,188 @@
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
             touch-action: none;
         }
+
+        // PDF Generation function
+        function createTestRecord() {
+            var testRecord = {
+                id: 'TEST_' + Date.now(),
+                timestamp: new Date().toISOString(),
+                date: '2025-01-15',
+                time: '08:30-09:20',
+                classRoom: 'ม.1/1',
+                subject: 'คณิตศาสตร์',
+                regularTeacher: 'นางสาวสมใจ ใจดี',
+                substituteTeacher: 'นายสมชาย รักการสอน',
+                content: 'สมการเชิงเส้นตัวแปรเดียว การแก้สมการ ax + b = c',
+                activities: 'อธิบายหลักการ ให้นักเรียนฝึกแก้โจทย์ จับคู่ทำแบบฝึกหัด',
+                homework: 'แบบฝึกหัด หน้า 45 ข้อ 1-10',
+                status: 'completed',
+                createdAt: new Date().toLocaleString('th-TH'),
+                headApproval: 'approved',
+                headReason: 'อนุมัติโดยหัวหน้าสาระ เนื้อหาเหมาะสม',
+                adminApproval: 'approved',
+                adminReason: 'อนุมัติโดยรองกลุ่มบริหาร ครูสอนแทนมีความเหมาะสมและประสบการณ์เพียงพอ',
+                finalApprovalDate: new Date().toLocaleString('th-TH'),
+                substituteReport: {
+                    attendance: '35 คน (จากทั้งหมด 35 คน)',
+                    behavior: 'นักเรียนให้ความสนใจและมีส่วนร่วมในการเรียน',
+                    observations: 'นักเรียนเข้าใจเนื้อหาได้ดี สามารถทำแบบฝึกหัดได้ถูกต้อง',
+                    submittedAt: new Date().toLocaleString('th-TH')
+                }
+            };
+            
+            records.push(testRecord);
+            localStorage.setItem('teachingRecords', JSON.stringify(records));
+            
+            showNotification('สร้างข้อมูลทดสอบเรียบร้อย ตอนนี้สามารถทดสอบการพิมพ์ PDF ได้แล้ว', 'success');
+            loadAllRecords();
+            loadDashboardData(); // Update dashboard as well
+        }
+            var record = records.find(function(r) { return r.id === recordId; });
+            if (!record) {
+                showNotification('ไม่พบข้อมูลที่ต้องการพิมพ์', 'error');
+                return;
+            }
+
+            if (record.status !== 'completed' || record.adminApproval !== 'approved') {
+                showNotification('สามารถพิมพ์ PDF ได้เฉพาะเอกสารที่อนุมัติครบทุกขั้นตอนแล้วเท่านั้น', 'error');
+                return;
+            }
+
+            // Create PDF content
+            var pdfContent = createPDFContent(record);
+            
+            // Open in new window for printing
+            var printWindow = window.open('', '_blank');
+            printWindow.document.write(pdfContent);
+            printWindow.document.close();
+            
+            // Auto print after content loads
+            printWindow.onload = function() {
+                printWindow.print();
+            };
+        }
+
+        function createPDFContent(record) {
+            var currentDate = new Date().toLocaleDateString('th-TH');
+            
+            var html = '<!DOCTYPE html>';
+            html += '<html lang="th">';
+            html += '<head>';
+            html += '<meta charset="UTF-8">';
+            html += '<meta name="viewport" content="width=device-width, initial-scale=1.0">';
+            html += '<title>เอกสารบันทึกการสอนแทน - ' + (record.subject || 'ไม่ระบุ') + '</title>';
+            html += '<style>';
+            html += '@import url("https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap");';
+            html += 'body { font-family: "Sarabun", Arial, sans-serif; margin: 0; padding: 20px; line-height: 1.6; color: #333; }';
+            html += '.header { text-align: center; border-bottom: 3px solid #2563eb; padding-bottom: 20px; margin-bottom: 30px; }';
+            html += '.school-name { font-size: 24px; font-weight: bold; color: #1e40af; margin-bottom: 5px; }';
+            html += '.document-title { font-size: 20px; font-weight: 600; color: #374151; margin-bottom: 10px; }';
+            html += '.document-id { font-size: 14px; color: #6b7280; }';
+            html += '.content-section { margin-bottom: 25px; border: 1px solid #e5e7eb; border-radius: 8px; padding: 20px; }';
+            html += '.section-title { font-size: 16px; font-weight: 600; color: #1f2937; margin-bottom: 15px; border-bottom: 2px solid #f3f4f6; padding-bottom: 5px; }';
+            html += '.info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px; }';
+            html += '.info-item { display: flex; flex-direction: column; }';
+            html += '.info-label { font-weight: 600; color: #374151; font-size: 14px; margin-bottom: 5px; }';
+            html += '.info-value { color: #111827; font-size: 14px; border-bottom: 1px dotted #d1d5db; padding-bottom: 3px; min-height: 20px; }';
+            html += '.content-text { background-color: #f9fafb; padding: 15px; border-radius: 6px; border-left: 4px solid #3b82f6; margin-bottom: 10px; }';
+            html += '.approval-section { background-color: #f0f9ff; border: 2px solid #0ea5e9; border-radius: 8px; padding: 20px; margin-top: 20px; }';
+            html += '.approval-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; }';
+            html += '.approval-item { text-align: center; padding: 15px; border: 1px solid #e0e7ff; border-radius: 6px; background-color: white; }';
+            html += '.approval-title { font-weight: 600; color: #1e40af; margin-bottom: 10px; }';
+            html += '.approval-status { color: #059669; font-weight: 600; margin-bottom: 5px; }';
+            html += '.signature-box { border: 1px solid #d1d5db; height: 80px; margin: 10px 0; border-radius: 4px; background-color: #fafafa; display: flex; align-items: center; justify-content: center; color: #9ca3af; font-size: 12px; }';
+            html += '.footer { margin-top: 40px; text-align: center; font-size: 12px; color: #6b7280; border-top: 1px solid #e5e7eb; padding-top: 20px; }';
+            html += '.print-date { position: absolute; top: 20px; right: 20px; font-size: 12px; color: #6b7280; }';
+            html += '@media print { body { margin: 0; } .no-print { display: none; } }';
+            html += '</style>';
+            html += '</head>';
+            html += '<body>';
+            
+            html += '<div class="print-date">พิมพ์เมื่อ: ' + currentDate + '</div>';
+            
+            html += '<div class="header">';
+            html += '<div class="school-name">โรงเรียนสา</div>';
+            html += '<div class="document-title">เอกสารบันทึกการสอนแทน</div>';
+            html += '<div class="document-id">เลขที่เอกสาร: ' + (record.id || 'ไม่ระบุ') + '</div>';
+            html += '</div>';
+
+            html += '<div class="content-section">';
+            html += '<div class="section-title">ข้อมูลการมอบหมายงาน</div>';
+            html += '<div class="info-grid">';
+            html += '<div class="info-item"><div class="info-label">วันที่สอนแทน:</div><div class="info-value">' + (record.date || 'ไม่ระบุ') + '</div></div>';
+            html += '<div class="info-item"><div class="info-label">เวลา:</div><div class="info-value">' + (record.time || 'ไม่ระบุ') + '</div></div>';
+            html += '<div class="info-item"><div class="info-label">ชั้น/ห้อง:</div><div class="info-value">' + (record.classRoom || 'ไม่ระบุ') + '</div></div>';
+            html += '<div class="info-item"><div class="info-label">วิชา:</div><div class="info-value">' + (record.subject || 'ไม่ระบุ') + '</div></div>';
+            html += '<div class="info-item"><div class="info-label">ครูประจำวิชา:</div><div class="info-value">' + (record.regularTeacher || 'ไม่ระบุ') + '</div></div>';
+            html += '<div class="info-item"><div class="info-label">ครูสอนแทน:</div><div class="info-value">' + (record.substituteTeacher || 'ไม่ระบุ') + '</div></div>';
+            html += '</div>';
+            
+            html += '<div class="info-label">เนื้อหาที่สอน:</div>';
+            html += '<div class="content-text">' + (record.content || 'ไม่ระบุ') + '</div>';
+            
+            html += '<div class="info-label">กิจกรรมการเรียนการสอน:</div>';
+            html += '<div class="content-text">' + (record.activities || 'ไม่ระบุ') + '</div>';
+            
+            html += '<div class="info-label">การบ้าน:</div>';
+            html += '<div class="content-text">' + (record.homework || 'ไม่มี') + '</div>';
+            html += '</div>';
+
+            if (record.substituteReport) {
+                html += '<div class="content-section">';
+                html += '<div class="section-title">รายงานผลการสอนจากครูสอนแทน</div>';
+                html += '<div class="info-grid">';
+                html += '<div class="info-item"><div class="info-label">จำนวนนักเรียนที่เข้าเรียน:</div><div class="info-value">' + (record.substituteReport.attendance || 'ไม่ระบุ') + '</div></div>';
+                html += '<div class="info-item"><div class="info-label">พฤติกรรมของนักเรียน:</div><div class="info-value">' + (record.substituteReport.behavior || 'ไม่ระบุ') + '</div></div>';
+                html += '</div>';
+                html += '<div class="info-label">ข้อสังเกตเพิ่มเติม:</div>';
+                html += '<div class="content-text">' + (record.substituteReport.observations || 'ไม่มี') + '</div>';
+                html += '</div>';
+            }
+
+            html += '<div class="approval-section">';
+            html += '<div class="section-title">การอนุมัติ</div>';
+            html += '<div class="approval-grid">';
+            
+            html += '<div class="approval-item">';
+            html += '<div class="approval-title">ครูประจำวิชา</div>';
+            html += '<div class="approval-status">✓ มอบหมาย</div>';
+            html += '<div class="signature-box">ลายเซ็นครูประจำวิชา</div>';
+            html += '<div>' + (record.createdAt || '') + '</div>';
+            html += '</div>';
+            
+            html += '<div class="approval-item">';
+            html += '<div class="approval-title">หัวหน้าสาระ</div>';
+            html += '<div class="approval-status">✓ อนุมัติ</div>';
+            html += '<div class="signature-box">ลายเซ็นหัวหน้าสาระ</div>';
+            html += '<div>' + (record.headReason || '') + '</div>';
+            html += '</div>';
+            
+            html += '<div class="approval-item">';
+            html += '<div class="approval-title">รองกลุ่มบริหาร</div>';
+            html += '<div class="approval-status">✓ อนุมัติขั้นสุดท้าย</div>';
+            html += '<div class="signature-box">ลายเซ็นรองกลุ่มบริหาร</div>';
+            html += '<div>' + (record.finalApprovalDate || '') + '</div>';
+            html += '</div>';
+            
+            html += '</div>';
+            
+            html += '<div style="margin-top: 20px;">';
+            html += '<div class="info-label">เหตุผลการอนุมัติจากรองกลุ่มบริหาร:</div>';
+            html += '<div class="content-text">' + (record.adminReason || 'ไม่ระบุ') + '</div>';
+            html += '</div>';
+            html += '</div>';
+
+            html += '<div class="footer">';
+            html += '<div>เอกสารนี้ออกโดยระบบบันทึกการสอนแทน - โรงเรียนสา</div>';
+            html += '<div>สถานะ: อนุมัติครบทุกขั้นตอนแล้ว | วันที่สร้างเอกสาร: ' + currentDate + '</div>';
+            html += '</div>';
+            
+            html += '</body>';
+            html += '</html>';
+            
+            return html;
+        }
         .signature-pad:hover {
             border-color: #1d4ed8;
             box-shadow: 0 4px 8px rgba(0,0,0,0.15);
@@ -417,13 +599,38 @@
 
                 <!-- Recent Records -->
                 <div class="bg-gray-50 rounded-lg p-6">
-                    <h3 class="text-lg font-semibold text-gray-800 mb-4">รายการล่าสุด</h3>
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-lg font-semibold text-gray-800">รายการล่าสุด</h3>
+                        <button onclick="showAllRecords()" class="text-blue-600 hover:text-blue-800 text-sm">ดูทั้งหมด</button>
+                    </div>
                     <div id="recentRecords">
                         <p class="text-gray-500">ไม่มีข้อมูล</p>
                     </div>
                 </div>
 
                 <button onclick="backToMenu()" class="mt-6 bg-gray-500 hover:bg-gray-600 text-white px-6 py-2 rounded-lg">กลับ</button>
+            </div>
+        </div>
+
+        <!-- All Records Section -->
+        <div id="allRecordsSection" class="hidden">
+            <div class="bg-white rounded-xl shadow-lg p-8">
+                <h2 class="text-2xl font-bold text-gray-800 mb-6">📋 รายการทั้งหมด</h2>
+                
+                <!-- Add test completed record button for testing -->
+                <div class="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                    <h4 class="font-semibold text-yellow-800 mb-2">สำหรับทดสอบ</h4>
+                    <button onclick="createTestRecord()" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">
+                        สร้างข้อมูลทดสอบที่อนุมัติแล้ว
+                    </button>
+                    <p class="text-sm text-yellow-700 mt-2">สร้างข้อมูลตัวอย่างที่ผ่านการอนุมัติแล้วเพื่อทดสอบการพิมพ์ PDF</p>
+                </div>
+                
+                <div id="allRecordsList">
+                    <p class="text-gray-600">ไม่มีข้อมูล</p>
+                </div>
+
+                <button onclick="showDashboard()" class="mt-6 bg-gray-500 hover:bg-gray-600 text-white px-6 py-2 rounded-lg">กลับแดชบอร์ด</button>
             </div>
         </div>
     </main>
@@ -472,10 +679,10 @@
         }
 
         function hideAllSections() {
-            var sections = ['menuSection', 'teacherForm', 'headForm', 'substituteForm', 'adminForm', 'dashboard'];
-            for (var i = 0; i < sections.length; i++) {
-                document.getElementById(sections[i]).classList.add('hidden');
-            }
+            var sections = ['menuSection', 'teacherForm', 'headForm', 'substituteForm', 'adminForm', 'dashboard', 'allRecordsSection'];
+            sections.forEach(function(id) {
+                document.getElementById(id).classList.add('hidden');
+            });
         }
 
         function showSection(sectionId) {
@@ -1112,14 +1319,104 @@
                 var statusClass = getStatusClass(record);
                 
                 html += '<div class="record-card ' + statusClass + '">';
+                html += '<div class="flex justify-between items-start">';
+                html += '<div>';
                 html += '<h4 class="font-semibold text-gray-800">' + (record.subject || 'ไม่ระบุวิชา') + ' - ' + (record.classRoom || 'ไม่ระบุห้อง') + '</h4>';
                 html += '<p>ครูประจำ: ' + (record.regularTeacher || 'ไม่ระบุ') + ' | วันที่: ' + (record.date || 'ไม่ระบุ') + '</p>';
                 html += '<span class="inline-block px-2 py-1 text-xs rounded ' + getStatusBadgeClass(record) + '">';
                 html += statusText;
                 html += '</span>';
                 html += '</div>';
+                
+                // Add PDF button - ยืดหยุ่นเงื่อนไข
+                html += '<div class="flex flex-col space-y-1">';
+                if (record.headApproval === 'approved' || record.adminApproval === 'approved' || record.status === 'completed') {
+                    html += '<button onclick="generatePDF(\'' + record.id + '\')" ';
+                    html += 'class="bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700">';
+                    html += '📄 PDF';
+                    html += '</button>';
+                }
+                // เพิ่มปุ่มทดสอบสำหรับทุกรายการ
+                html += '<button onclick="generatePDF(\'' + record.id + '\')" ';
+                html += 'class="bg-green-600 text-white px-2 py-1 rounded text-xs hover:bg-green-700">';
+                html += '🧪 ทดสอบ';
+                html += '</button>';
+                html += '</div>';
+                
+                html += '</div>';
+                html += '</div>';
             }
             recentContainer.innerHTML = html;
+        }
+
+        function loadAllRecords() {
+            var container = document.getElementById('allRecordsList');
+            if (records.length === 0) {
+                container.innerHTML = '<p class="text-gray-600">ไม่มีข้อมูล</p>';
+                return;
+            }
+            
+            var html = '';
+            for (var i = records.length - 1; i >= 0; i--) {
+                var record = records[i];
+                var statusText = getStatusText(record);
+                var statusClass = getStatusClass(record);
+                
+                html += '<div class="record-card ' + statusClass + ' mb-4">';
+                html += '<div class="flex justify-between items-start">';
+                html += '<div class="flex-1">';
+                html += '<h4 class="font-semibold text-gray-800 mb-2">' + (record.subject || 'ไม่ระบุวิชา') + ' - ' + (record.classRoom || 'ไม่ระบุห้อง') + '</h4>';
+                html += '<div class="grid grid-cols-2 gap-4 text-sm">';
+                html += '<p><strong>ครูประจำ:</strong> ' + (record.regularTeacher || 'ไม่ระบุ') + '</p>';
+                html += '<p><strong>ครูสอนแทน:</strong> ' + (record.substituteTeacher || 'ไม่ระบุ') + '</p>';
+                html += '<p><strong>วันที่สอน:</strong> ' + (record.date || 'ไม่ระบุ') + '</p>';
+                html += '<p><strong>เวลา:</strong> ' + (record.time || 'ไม่ระบุ') + '</p>';
+                html += '</div>';
+                html += '<p class="mt-2"><strong>เนื้อหา:</strong> ' + (record.content || 'ไม่ระบุ') + '</p>';
+                html += '</div>';
+                
+                html += '<div class="flex flex-col items-end space-y-2">';
+                html += '<span class="px-3 py-1 text-sm rounded ' + getStatusBadgeClass(record) + '">';
+                html += statusText;
+                html += '</span>';
+                
+                // แสดงปุ่ม PDF สำหรับทุกรายการ (เพื่อทดสอบ)
+                html += '<div class="flex flex-col space-y-1">';
+                html += '<button onclick="generatePDF(\'' + record.id + '\')" ';
+                html += 'class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">';
+                html += '📄 พิมพ์ PDF';
+                html += '</button>';
+                
+                // เพิ่มปุ่มทดสอบข้อมูล
+                html += '<button onclick="showRecordInfo(\'' + record.id + '\')" ';
+                html += 'class="bg-gray-600 text-white px-4 py-1 rounded hover:bg-gray-700 text-sm">';
+                html += 'ดูข้อมูล';
+                html += '</button>';
+                html += '</div>';
+                
+                html += '</div>';
+                html += '</div>';
+                html += '</div>';
+            }
+            container.innerHTML = html;
+        }
+
+        // ฟังก์ชันดูข้อมูลรายละเอียด
+        function showRecordInfo(recordId) {
+            var record = records.find(function(r) { return r.id === recordId; });
+            if (!record) {
+                alert('ไม่พบข้อมูล');
+                return;
+            }
+            
+            var info = 'ข้อมูลรายละเอียด:\n\n';
+            info += 'ID: ' + record.id + '\n';
+            info += 'วิชา: ' + (record.subject || 'ไม่ระบุ') + '\n';
+            info += 'สถานะ: ' + (record.status || 'ไม่ระบุ') + '\n';
+            info += 'หัวหน้าอนุมัติ: ' + (record.headApproval || 'ไม่ได้อนุมัติ') + '\n';
+            info += 'รองอนุมัติ: ' + (record.adminApproval || 'ไม่ได้อนุมัติ') + '\n';
+            
+            alert(info);
         }
 
         function getStatusText(record) {
