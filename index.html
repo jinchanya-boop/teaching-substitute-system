@@ -858,7 +858,7 @@
         function loadHeadRecords() {
             var container = document.getElementById('headRecordsList');
             var pendingRecords = records.filter(function(record) {
-                return record.status === 'pending';
+                return !record.headApproval || record.headApproval === '';
             });
             
             if (pendingRecords.length === 0) {
@@ -894,10 +894,12 @@
             }
             container.innerHTML = html;
             
-            // Initialize signature pads for each record
-            for (var i = 0; i < pendingRecords.length; i++) {
-                initSignaturePad('headSignature_' + pendingRecords[i].id);
-            }
+            // Initialize signature pads for each record after a short delay
+            setTimeout(function() {
+                for (var i = 0; i < pendingRecords.length; i++) {
+                    initSignaturePad('headSignature_' + pendingRecords[i].id);
+                }
+            }, 100);
         }
 
         function loadSubstituteRecords() {
