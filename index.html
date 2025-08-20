@@ -1078,12 +1078,30 @@
         // Load records functions
         function loadHeadRecords() {
             var container = document.getElementById('headRecordsList');
+            
+            // แสดงข้อมูลการดีบัก
+            console.log('กำลังโหลดข้อมูลหัวหน้า, รายการทั้งหมด:', records.length);
+            
+            // เงื่อนไขที่ยืดหยุ่นขึ้น - แสดงรายการที่ยังไม่ได้อนุมัติจากหัวหน้า
             var pendingRecords = records.filter(function(record) {
-                return !record.headApproval || record.headApproval === '';
+                console.log('ตรวจสอบ record:', record.id, 'headApproval:', record.headApproval, 'status:', record.status);
+                return (!record.headApproval || record.headApproval === '' || record.headApproval === 'pending') && 
+                       (!record.status || record.status === 'pending' || record.status === '');
             });
             
+            console.log('รายการที่รอการอนุมัติ:', pendingRecords.length);
+            
             if (pendingRecords.length === 0) {
-                container.innerHTML = '<p class="text-gray-600">ไม่มีรายการที่รออนุมัติ</p>';
+                // แสดงรายการทั้งหมดเพื่อดูสถานะ
+                var html = '<div class="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded">';
+                html += '<h4 class="font-semibold text-yellow-800">ไม่มีรายการที่รออนุมัติ</h4>';
+                html += '<p class="text-sm text-yellow-700">รายการทั้งหมด: ' + records.length + ' รายการ</p>';
+                
+                if (records.length > 0) {
+                    html += '<button onclick="showAllForHead()" class="mt-2 bg-blue-600 text-white px-4 py-2 rounded">ดูรายการทั้งหมด</button>';
+                }
+                html += '</div>';
+                container.innerHTML = html;
                 return;
             }
             
@@ -1091,10 +1109,11 @@
             for (var i = 0; i < pendingRecords.length; i++) {
                 var record = pendingRecords[i];
                 html += '<div class="record-card status-pending mb-6">';
-                html += '<h4 class="font-semibold text-gray-800">วิชา: ' + record.subject + '</h4>';
-                html += '<p>ชั้น: ' + record.classRoom + ' | วันที่: ' + record.date + ' | เวลา: ' + record.time + '</p>';
-                html += '<p>ครูประจำ: ' + record.regularTeacher + ' | ครูสอนแทน: ' + record.substituteTeacher + '</p>';
-                html += '<p>เนื้อหา: ' + record.content + '</p>';
+                html += '<h4 class="font-semibold text-gray-800">วิชา: ' + (record.subject || 'ไม่ระบุ') + '</h4>';
+                html += '<p>ชั้น: ' + (record.classRoom || 'ไม่ระบุ') + ' | วันที่: ' + (record.date || 'ไม่ระบุ') + ' | เวลา: ' + (record.time || 'ไม่ระบุ') + '</p>';
+                html += '<p>ครูประจำ: ' + (record.regularTeacher || 'ไม่ระบุ') + ' | ครูสอนแทน: ' + (record.substituteTeacher || 'ไม่ระบุ') + '</p>';
+                html += '<p>เนื้อหา: ' + (record.content || 'ไม่ระบุ') + '</p>';
+                html += '<p class="text-sm text-gray-600">สถานะปัจจุบัน: ' + (record.status || 'ไม่มี') + '</p>';
                 
                 // Add signature area for head approval
                 html += '<div class="mt-4 border-t pt-4">';
@@ -1121,6 +1140,60 @@
                     initSignaturePad('headSignature_' + pendingRecords[i].id);
                 }
             }, 100);
+        }
+
+        // ฟังก์ชันใหม่แสดงรายการทั้งหมดสำหรับหัวหน้า
+        function showAllForHead() {
+            var container = document.getElementById('headRecordsList');
+            var html = '<div class="mb-4">';
+            html += '<h4 class="font-semibold text-gray-800 mb-3">รายการทั้งหมด (เพื่อตรวจสอบ)</h4>';
+            
+            for (var i = 0; i < records.length; i++) {
+                var record = records[i];
+                var statusColor = record.headApproval === 'approved' ? 'bg-green-100' : 
+                                 record.headApproval === 'rejected' ? 'bg-red-100' : 'bg-yellow-100';
+                
+                html += '<div class="p-3 mb-2 border rounded ' + statusColor + '">';
+                html += '<div class="flex justify-between">';
+                html += '<div>';
+                html += '<strong>' + (record.subject || 'ไม่ระบุ') + '</strong> - ' + (record.classRoom || 'ไม่ระบุ');
+                html += '<br><small>ครูประจำ: ' + (record.regularTeacher || 'ไม่ระบุ') + '</small>';
+                html += '</div>';
+                html += '<div class="text-right">';
+                html += '<div class="text-sm">สถานะ: ' + (record.headApproval || 'รออนุมัติ') + '</div>';
+                if (!record.headApproval || record.headApproval === '') {
+                    html += '<button onclick="forceApproveRecord(\'' + record.id + '\')" ';
+                    html += 'class="mt-1 bg-green-600 text-white px-2 py-1 rounded text-sm">อนุมัติด่วน</button>';
+                }
+                html += '</div>';
+                html += '</div>';
+                html += '</div>';
+            }
+            
+            html += '<button onclick="loadHeadRecords()" class="mt-4 bg-gray-600 text-white px-4 py-2 rounded">กลับ</button>';
+            html += '</div>';
+            
+            container.innerHTML = html;
+        }
+
+        // ฟังก์ชันอนุมัติด่วนโดยไม่ต้องลายเซ็น
+        function forceApproveRecord(recordId) {
+            if (!confirm('ยืนยันการอนุมัติด่วนสำหรับรายการนี้?')) {
+                return;
+            }
+            
+            for (var i = 0; i < records.length; i++) {
+                if (records[i].id === recordId) {
+                    records[i].headApproval = 'approved';
+                    records[i].headReason = 'อนุมัติด่วนโดยหัวหน้าสาระ';
+                    records[i].status = 'head_approved';
+                    break;
+                }
+            }
+            
+            localStorage.setItem('teachingRecords', JSON.stringify(records));
+            showNotification('อนุมัติรายการเรียบร้อย', 'success');
+            showAllForHead(); // รีเฟรชการแสดงผล
         }
 
         function loadSubstituteRecords() {
