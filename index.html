@@ -19,7 +19,41 @@
         }
 
         // PDF Generation function
-        function generatePDF(recordId) {
+        function createTestRecord() {
+            var testRecord = {
+                id: 'TEST_' + Date.now(),
+                timestamp: new Date().toISOString(),
+                date: '2025-01-15',
+                time: '08:30-09:20',
+                classRoom: 'ม.1/1',
+                subject: 'คณิตศาสตร์',
+                regularTeacher: 'นางสาวสมใจ ใจดี',
+                substituteTeacher: 'นายสมชาย รักการสอน',
+                content: 'สมการเชิงเส้นตัวแปรเดียว การแก้สมการ ax + b = c',
+                activities: 'อธิบายหลักการ ให้นักเรียนฝึกแก้โจทย์ จับคู่ทำแบบฝึกหัด',
+                homework: 'แบบฝึกหัด หน้า 45 ข้อ 1-10',
+                status: 'completed',
+                createdAt: new Date().toLocaleString('th-TH'),
+                headApproval: 'approved',
+                headReason: 'อนุมัติโดยหัวหน้าสาระ เนื้อหาเหมาะสม',
+                adminApproval: 'approved',
+                adminReason: 'อนุมัติโดยรองกลุ่มบริหาร ครูสอนแทนมีความเหมาะสมและประสบการณ์เพียงพอ',
+                finalApprovalDate: new Date().toLocaleString('th-TH'),
+                substituteReport: {
+                    attendance: '35 คน (จากทั้งหมด 35 คน)',
+                    behavior: 'นักเรียนให้ความสนใจและมีส่วนร่วมในการเรียน',
+                    observations: 'นักเรียนเข้าใจเนื้อหาได้ดี สามารถทำแบบฝึกหัดได้ถูกต้อง',
+                    submittedAt: new Date().toLocaleString('th-TH')
+                }
+            };
+            
+            records.push(testRecord);
+            localStorage.setItem('teachingRecords', JSON.stringify(records));
+            
+            showNotification('สร้างข้อมูลทดสอบเรียบร้อย ตอนนี้สามารถทดสอบการพิมพ์ PDF ได้แล้ว', 'success');
+            loadAllRecords();
+            loadDashboardData(); // Update dashboard as well
+        }
             var record = records.find(function(r) { return r.id === recordId; });
             if (!record) {
                 showNotification('ไม่พบข้อมูลที่ต้องการพิมพ์', 'error');
@@ -728,13 +762,38 @@
 
                 <!-- Recent Records -->
                 <div class="bg-gray-50 rounded-lg p-6">
-                    <h3 class="text-lg font-semibold text-gray-800 mb-4">รายการล่าสุด</h3>
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-lg font-semibold text-gray-800">รายการล่าสุด</h3>
+                        <button onclick="showAllRecords()" class="text-blue-600 hover:text-blue-800 text-sm">ดูทั้งหมด</button>
+                    </div>
                     <div id="recentRecords">
                         <p class="text-gray-500">ไม่มีข้อมูล</p>
                     </div>
                 </div>
 
                 <button onclick="backToMenu()" class="mt-6 bg-gray-500 hover:bg-gray-600 text-white px-6 py-2 rounded-lg">กลับ</button>
+            </div>
+        </div>
+
+        <!-- All Records Section -->
+        <div id="allRecordsSection" class="hidden">
+            <div class="bg-white rounded-xl shadow-lg p-8">
+                <h2 class="text-2xl font-bold text-gray-800 mb-6">📋 รายการทั้งหมด</h2>
+                
+                <!-- Add test completed record button for testing -->
+                <div class="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                    <h4 class="font-semibold text-yellow-800 mb-2">สำหรับทดสอบ</h4>
+                    <button onclick="createTestRecord()" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">
+                        สร้างข้อมูลทดสอบที่อนุมัติแล้ว
+                    </button>
+                    <p class="text-sm text-yellow-700 mt-2">สร้างข้อมูลตัวอย่างที่ผ่านการอนุมัติแล้วเพื่อทดสอบการพิมพ์ PDF</p>
+                </div>
+                
+                <div id="allRecordsList">
+                    <p class="text-gray-600">ไม่มีข้อมูล</p>
+                </div>
+
+                <button onclick="showDashboard()" class="mt-6 bg-gray-500 hover:bg-gray-600 text-white px-6 py-2 rounded-lg">กลับแดชบอร์ด</button>
             </div>
         </div>
     </main>
@@ -783,10 +842,10 @@
         }
 
         function hideAllSections() {
-            var sections = ['menuSection', 'teacherForm', 'headForm', 'substituteForm', 'adminForm', 'dashboard'];
-            for (var i = 0; i < sections.length; i++) {
-                document.getElementById(sections[i]).classList.add('hidden');
-            }
+            var sections = ['menuSection', 'teacherForm', 'headForm', 'substituteForm', 'adminForm', 'dashboard', 'allRecordsSection'];
+            sections.forEach(function(id) {
+                document.getElementById(id).classList.add('hidden');
+            });
         }
 
         function showSection(sectionId) {
@@ -1432,12 +1491,13 @@
                 html += '</span>';
                 html += '</div>';
                 
-                // Add PDF button for completed records
-                if (record.status === 'completed' && record.adminApproval === 'approved') {
+                // Add PDF button for completed records (more flexible conditions)
+                if ((record.status === 'completed' && record.adminApproval === 'approved') || 
+                    (record.adminApproval === 'approved' && record.headApproval === 'approved')) {
                     html += '<div>';
                     html += '<button onclick="generatePDF(\'' + record.id + '\')" ';
-                    html += 'class="bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700">';
-                    html += '📄 พิมพ์ PDF';
+                    html += 'class="bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700 ml-2">';
+                    html += '📄 PDF';
                     html += '</button>';
                     html += '</div>';
                 }
@@ -1446,6 +1506,59 @@
                 html += '</div>';
             }
             recentContainer.innerHTML = html;
+        }
+
+        function showAllRecords() {
+            hideAllSections();
+            document.getElementById('allRecordsSection').classList.remove('hidden');
+            loadAllRecords();
+        }
+
+        function loadAllRecords() {
+            var container = document.getElementById('allRecordsList');
+            if (records.length === 0) {
+                container.innerHTML = '<p class="text-gray-600">ไม่มีข้อมูล</p>';
+                return;
+            }
+            
+            var html = '';
+            for (var i = records.length - 1; i >= 0; i--) {
+                var record = records[i];
+                var statusText = getStatusText(record);
+                var statusClass = getStatusClass(record);
+                
+                html += '<div class="record-card ' + statusClass + ' mb-4">';
+                html += '<div class="flex justify-between items-start">';
+                html += '<div class="flex-1">';
+                html += '<h4 class="font-semibold text-gray-800 mb-2">' + (record.subject || 'ไม่ระบุวิชา') + ' - ' + (record.classRoom || 'ไม่ระบุห้อง') + '</h4>';
+                html += '<div class="grid grid-cols-2 gap-4 text-sm">';
+                html += '<p><strong>ครูประจำ:</strong> ' + (record.regularTeacher || 'ไม่ระบุ') + '</p>';
+                html += '<p><strong>ครูสอนแทน:</strong> ' + (record.substituteTeacher || 'ไม่ระบุ') + '</p>';
+                html += '<p><strong>วันที่สอน:</strong> ' + (record.date || 'ไม่ระบุ') + '</p>';
+                html += '<p><strong>เวลา:</strong> ' + (record.time || 'ไม่ระบุ') + '</p>';
+                html += '</div>';
+                html += '<p class="mt-2"><strong>เนื้อหา:</strong> ' + (record.content || 'ไม่ระบุ') + '</p>';
+                html += '</div>';
+                
+                html += '<div class="flex flex-col items-end space-y-2">';
+                html += '<span class="px-3 py-1 text-sm rounded ' + getStatusBadgeClass(record) + '">';
+                html += statusText;
+                html += '</span>';
+                
+                // Add PDF button
+                if ((record.status === 'completed' && record.adminApproval === 'approved') || 
+                    (record.adminApproval === 'approved' && record.headApproval === 'approved')) {
+                    html += '<button onclick="generatePDF(\'' + record.id + '\')" ';
+                    html += 'class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">';
+                    html += '📄 พิมพ์ PDF';
+                    html += '</button>';
+                }
+                
+                html += '</div>';
+                html += '</div>';
+                html += '</div>';
+            }
+            container.innerHTML = html;
         }
 
         function getStatusText(record) {
