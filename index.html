@@ -3,91 +3,6 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ระบบบันทึกการสอนแทน - โรงเรียนสา</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap');
-        body { font-family: 'Sarabun', sans-serif; }
-        .signature-pad {
-            border: 2px solid #3b82f6;
-            border-radius: 8px;
-            cursor: crosshair;
-            background: white;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            touch-action: none;
-        }
-
-        // PDF Generation function
-        function createTestRecord() {
-            var testRecord = {
-                id: 'TEST_' + Date.now(),
-                timestamp: new Date().toISOString(),
-                date: '2025-01-15',
-                time: '08:30-09:20',
-                classRoom: 'ม.1/1',
-                subject: 'คณิตศาสตร์',
-                regularTeacher: 'นางสาวสมใจ ใจดี',
-                substituteTeacher: 'นายสมชาย รักการสอน',
-                content: 'สมการเชิงเส้นตัวแปรเดียว การแก้สมการ ax + b = c',
-                activities: 'อธิบายหลักการ ให้นักเรียนฝึกแก้โจทย์ จับคู่ทำแบบฝึกหัด',
-                homework: 'แบบฝึกหัด หน้า 45 ข้อ 1-10',
-                status: 'completed',
-                createdAt: new Date().toLocaleString('th-TH'),
-                headApproval: 'approved',
-                headReason: 'อนุมัติโดยหัวหน้าสาระ เนื้อหาเหมาะสม',
-                adminApproval: 'approved',
-                adminReason: 'อนุมัติโดยรองกลุ่มบริหาร ครูสอนแทนมีความเหมาะสมและประสบการณ์เพียงพอ',
-                finalApprovalDate: new Date().toLocaleString('th-TH'),
-                substituteReport: {
-                    attendance: '35 คน (จากทั้งหมด 35 คน)',
-                    behavior: 'นักเรียนให้ความสนใจและมีส่วนร่วมในการเรียน',
-                    observations: 'นักเรียนเข้าใจเนื้อหาได้ดี สามารถทำแบบฝึกหัดได้ถูกต้อง',
-                    submittedAt: new Date().toLocaleString('th-TH')
-                }
-            };
-            
-            records.push(testRecord);
-            localStorage.setItem('teachingRecords', JSON.stringify(records));
-            
-            showNotification('สร้างข้อมูลทดสอบเรียบร้อย ตอนนี้สามารถทดสอบการพิมพ์ PDF ได้แล้ว', 'success');
-            loadAllRecords();
-            loadDashboardData(); // Update dashboard as well
-        }
-            var record = records.find(function(r) { return r.id === recordId; });
-            if (!record) {
-                showNotification('ไม่พบข้อมูลที่ต้องการพิมพ์', 'error');
-                return;
-            }
-
-            if (record.status !== 'completed' || record.adminApproval !== 'approved') {
-                showNotification('สามารถพิมพ์ PDF ได้เฉพาะเอกสารที่อนุมัติครบทุกขั้นตอนแล้วเท่านั้น', 'error');
-                return;
-            }
-
-            // Create PDF content
-            var pdfContent = createPDFContent(record);
-            
-            // Open in new window for printing
-            var printWindow = window.open('', '_blank');
-            printWindow.document.write(pdfContent);
-            printWindow.document.close();
-            
-            // Auto print after content loads
-            printWindow.onload = function() {
-                printWindow.print();
-            };
-        }
-
-        function createPDFContent(record) {
-            var currentDate = new Date().toLocaleDateString('th-TH');
-            
-            return `
-<!DOCTYPE html>
-<html lang="th">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>เอกสารบันทึกการสอนแทน - ${record.subject}</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap');
@@ -1981,3 +1896,4 @@
     </script>
 </body>
 </html>
+
