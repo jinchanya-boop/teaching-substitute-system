@@ -782,12 +782,20 @@
             var canvas = document.getElementById('teacherSignaturePad');
             var signatureData = canvas.toDataURL();
             
-            // Check if signature is not empty
+            // Check if signature is not empty - improved detection
             var ctx = canvas.getContext('2d');
             var imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
             var hasSignature = false;
+            
+            // Check for any non-white pixels
             for (var i = 0; i < imageData.data.length; i += 4) {
-                if (imageData.data[i] !== 0 || imageData.data[i+1] !== 0 || imageData.data[i+2] !== 0) {
+                var r = imageData.data[i];     // red
+                var g = imageData.data[i + 1]; // green  
+                var b = imageData.data[i + 2]; // blue
+                var a = imageData.data[i + 3]; // alpha
+                
+                // If any pixel is not white (255,255,255) or transparent, there's a signature
+                if (a > 0 && (r < 255 || g < 255 || b < 255)) {
                     hasSignature = true;
                     break;
                 }
