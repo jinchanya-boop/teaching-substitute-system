@@ -17,6 +17,317 @@
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
             touch-action: none;
         }
+
+        // PDF Generation function
+        function generatePDF(recordId) {
+            var record = records.find(function(r) { return r.id === recordId; });
+            if (!record) {
+                showNotification('ไม่พบข้อมูลที่ต้องการพิมพ์', 'error');
+                return;
+            }
+
+            if (record.status !== 'completed' || record.adminApproval !== 'approved') {
+                showNotification('สามารถพิมพ์ PDF ได้เฉพาะเอกสารที่อนุมัติครบทุกขั้นตอนแล้วเท่านั้น', 'error');
+                return;
+            }
+
+            // Create PDF content
+            var pdfContent = createPDFContent(record);
+            
+            // Open in new window for printing
+            var printWindow = window.open('', '_blank');
+            printWindow.document.write(pdfContent);
+            printWindow.document.close();
+            
+            // Auto print after content loads
+            printWindow.onload = function() {
+                printWindow.print();
+            };
+        }
+
+        function createPDFContent(record) {
+            var currentDate = new Date().toLocaleDateString('th-TH');
+            
+            return `
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>เอกสารบันทึกการสอนแทน - ${record.subject}</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap');
+        
+        body {
+            font-family: 'Sarabun', Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            line-height: 1.6;
+            color: #333;
+        }
+        
+        .header {
+            text-align: center;
+            border-bottom: 3px solid #2563eb;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .school-name {
+            font-size: 24px;
+            font-weight: bold;
+            color: #1e40af;
+            margin-bottom: 5px;
+        }
+        
+        .document-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 10px;
+        }
+        
+        .document-id {
+            font-size: 14px;
+            color: #6b7280;
+        }
+        
+        .content-section {
+            margin-bottom: 25px;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 20px;
+        }
+        
+        .section-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 15px;
+            border-bottom: 2px solid #f3f4f6;
+            padding-bottom: 5px;
+        }
+        
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+        
+        .info-item {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .info-label {
+            font-weight: 600;
+            color: #374151;
+            font-size: 14px;
+            margin-bottom: 5px;
+        }
+        
+        .info-value {
+            color: #111827;
+            font-size: 14px;
+            border-bottom: 1px dotted #d1d5db;
+            padding-bottom: 3px;
+            min-height: 20px;
+        }
+        
+        .content-area {
+            margin-top: 15px;
+        }
+        
+        .content-text {
+            background-color: #f9fafb;
+            padding: 15px;
+            border-radius: 6px;
+            border-left: 4px solid #3b82f6;
+            margin-bottom: 10px;
+        }
+        
+        .approval-section {
+            background-color: #f0f9ff;
+            border: 2px solid #0ea5e9;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+        
+        .approval-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 20px;
+        }
+        
+        .approval-item {
+            text-align: center;
+            padding: 15px;
+            border: 1px solid #e0e7ff;
+            border-radius: 6px;
+            background-color: white;
+        }
+        
+        .approval-title {
+            font-weight: 600;
+            color: #1e40af;
+            margin-bottom: 10px;
+        }
+        
+        .approval-status {
+            color: #059669;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+        
+        .approval-date {
+            font-size: 12px;
+            color: #6b7280;
+        }
+        
+        .signature-box {
+            border: 1px solid #d1d5db;
+            height: 80px;
+            margin: 10px 0;
+            border-radius: 4px;
+            background-color: #fafafa;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #9ca3af;
+            font-size: 12px;
+        }
+        
+        .footer {
+            margin-top: 40px;
+            text-align: center;
+            font-size: 12px;
+            color: #6b7280;
+            border-top: 1px solid #e5e7eb;
+            padding-top: 20px;
+        }
+        
+        .print-date {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            font-size: 12px;
+            color: #6b7280;
+        }
+        
+        @media print {
+            body { margin: 0; }
+            .no-print { display: none; }
+        }
+    </style>
+</head>
+<body>
+    <div class="print-date">พิมพ์เมื่อ: ${currentDate}</div>
+    
+    <div class="header">
+        <div class="school-name">โรงเรียนสา</div>
+        <div class="document-title">เอกสารบันทึกการสอนแทน</div>
+        <div class="document-id">เลขที่เอกสาร: ${record.id}</div>
+    </div>
+
+    <div class="content-section">
+        <div class="section-title">ข้อมูลการมอบหมายงาน</div>
+        <div class="info-grid">
+            <div class="info-item">
+                <div class="info-label">วันที่สอนแทน:</div>
+                <div class="info-value">${record.date || 'ไม่ระบุ'}</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">เวลา:</div>
+                <div class="info-value">${record.time || 'ไม่ระบุ'}</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">ชั้น/ห้อง:</div>
+                <div class="info-value">${record.classRoom || 'ไม่ระบุ'}</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">วิชา:</div>
+                <div class="info-value">${record.subject || 'ไม่ระบุ'}</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">ครูประจำวิชา:</div>
+                <div class="info-value">${record.regularTeacher || 'ไม่ระบุ'}</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">ครูสอนแทน:</div>
+                <div class="info-value">${record.substituteTeacher || 'ไม่ระบุ'}</div>
+            </div>
+        </div>
+        
+        <div class="content-area">
+            <div class="info-label">เนื้อหาที่สอน:</div>
+            <div class="content-text">${record.content || 'ไม่ระบุ'}</div>
+            
+            <div class="info-label">กิจกรรมการเรียนการสอน:</div>
+            <div class="content-text">${record.activities || 'ไม่ระบุ'}</div>
+            
+            <div class="info-label">การบ้าน:</div>
+            <div class="content-text">${record.homework || 'ไม่มี'}</div>
+        </div>
+    </div>
+
+    ${record.substituteReport ? `
+    <div class="content-section">
+        <div class="section-title">รายงานผลการสอนจากครูสอนแทน</div>
+        <div class="info-grid">
+            <div class="info-item">
+                <div class="info-label">จำนวนนักเรียนที่เข้าเรียน:</div>
+                <div class="info-value">${record.substituteReport.attendance || 'ไม่ระบุ'}</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">พฤติกรรมของนักเรียน:</div>
+                <div class="info-value">${record.substituteReport.behavior || 'ไม่ระบุ'}</div>
+            </div>
+        </div>
+        <div class="info-label">ข้อสังเกตเพิ่มเติม:</div>
+        <div class="content-text">${record.substituteReport.observations || 'ไม่มี'}</div>
+    </div>
+    ` : ''}
+
+    <div class="approval-section">
+        <div class="section-title">การอนุมัติ</div>
+        <div class="approval-grid">
+            <div class="approval-item">
+                <div class="approval-title">ครูประจำวิชา</div>
+                <div class="approval-status">✓ มอบหมาย</div>
+                <div class="signature-box">ลายเซ็นครูประจำวิชา</div>
+                <div class="approval-date">${record.createdAt || ''}</div>
+            </div>
+            
+            <div class="approval-item">
+                <div class="approval-title">หัวหน้าสาระ</div>
+                <div class="approval-status">✓ อนุมัติ</div>
+                <div class="signature-box">ลายเซ็นหัวหน้าสาระ</div>
+                <div class="approval-date">${record.headReason || ''}</div>
+            </div>
+            
+            <div class="approval-item">
+                <div class="approval-title">รองกลุ่มบริหาร</div>
+                <div class="approval-status">✓ อนุมัติขั้นสุดท้าย</div>
+                <div class="signature-box">ลายเซ็นรองกลุ่มบริหาร</div>
+                <div class="approval-date">${record.finalApprovalDate || ''}</div>
+            </div>
+        </div>
+        
+        <div style="margin-top: 20px;">
+            <div class="info-label">เหตุผลการอนุมัติจากรองกลุ่มบริหาร:</div>
+            <div class="content-text">${record.adminReason || 'ไม่ระบุ'}</div>
+        </div>
+    </div>
+
+    <div class="footer">
+        <div>เอกสารนี้ออกโดยระบบบันทึกการสอนแทน - โรงเรียนสา</div>
+        <div>สถานะ: อนุมัติครบทุกขั้นตอนแล้ว | วันที่สร้างเอกสาร: ${currentDate}</div>
+    </div>
+</body>
+</html>`;
+        }
         .signature-pad:hover {
             border-color: #1d4ed8;
             box-shadow: 0 4px 8px rgba(0,0,0,0.15);
@@ -1112,11 +1423,26 @@
                 var statusClass = getStatusClass(record);
                 
                 html += '<div class="record-card ' + statusClass + '">';
+                html += '<div class="flex justify-between items-start">';
+                html += '<div>';
                 html += '<h4 class="font-semibold text-gray-800">' + (record.subject || 'ไม่ระบุวิชา') + ' - ' + (record.classRoom || 'ไม่ระบุห้อง') + '</h4>';
                 html += '<p>ครูประจำ: ' + (record.regularTeacher || 'ไม่ระบุ') + ' | วันที่: ' + (record.date || 'ไม่ระบุ') + '</p>';
                 html += '<span class="inline-block px-2 py-1 text-xs rounded ' + getStatusBadgeClass(record) + '">';
                 html += statusText;
                 html += '</span>';
+                html += '</div>';
+                
+                // Add PDF button for completed records
+                if (record.status === 'completed' && record.adminApproval === 'approved') {
+                    html += '<div>';
+                    html += '<button onclick="generatePDF(\'' + record.id + '\')" ';
+                    html += 'class="bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700">';
+                    html += '📄 พิมพ์ PDF';
+                    html += '</button>';
+                    html += '</div>';
+                }
+                
+                html += '</div>';
                 html += '</div>';
             }
             recentContainer.innerHTML = html;
