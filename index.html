@@ -2,16 +2,13 @@
 <html lang="th">
 <head>
     <meta charset="UTF-8">
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ระบบบันทึกการสอนแทน - โรงเรียนสา</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap');
-        body { 
-            font-family: 'Sarabun', sans-serif; 
-        }
+        body { font-family: 'Sarabun', sans-serif; }
         .signature-pad {
             border: 2px solid #3b82f6;
             border-radius: 8px;
@@ -19,6 +16,220 @@
             background: white;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
             touch-action: none;
+        }
+
+        // PDF Generation function
+        function createTestRecord() {
+            var testRecord = {
+                id: 'TEST_' + Date.now(),
+                timestamp: new Date().toISOString(),
+                date: '2025-01-15',
+                time: '08:30-09:20',
+                classRoom: 'ม.1/1',
+                subject: 'คณิตศาสตร์',
+                regularTeacher: 'นางสาวสมใจ ใจดี',
+                substituteTeacher: 'นายสมชาย รักการสอน',
+                content: 'สมการเชิงเส้นตัวแปรเดียว การแก้สมการ ax + b = c',
+                activities: 'อธิบายหลักการ ให้นักเรียนฝึกแก้โจทย์ จับคู่ทำแบบฝึกหัด',
+                homework: 'แบบฝึกหัด หน้า 45 ข้อ 1-10',
+                status: 'completed',
+                createdAt: new Date().toLocaleString('th-TH'),
+                headApproval: 'approved',
+                headReason: 'อนุมัติโดยหัวหน้าสาระ เนื้อหาเหมาะสม',
+                adminApproval: 'approved',
+                adminReason: 'อนุมัติโดยรองกลุ่มบริหาร ครูสอนแทนมีความเหมาะสมและประสบการณ์เพียงพอ',
+                finalApprovalDate: new Date().toLocaleString('th-TH'),
+                substituteReport: {
+                    attendance: '35 คน (จากทั้งหมด 35 คน)',
+                    behavior: 'นักเรียนให้ความสนใจและมีส่วนร่วมในการเรียน',
+                    observations: 'นักเรียนเข้าใจเนื้อหาได้ดี สามารถทำแบบฝึกหัดได้ถูกต้อง',
+                    submittedAt: new Date().toLocaleString('th-TH')
+                }
+            };
+            
+            records.push(testRecord);
+            localStorage.setItem('teachingRecords', JSON.stringify(records));
+            
+            showNotification('สร้างข้อมูลทดสอบเรียบร้อย ตอนนี้สามารถทดสอบการพิมพ์ PDF ได้แล้ว', 'success');
+            loadAllRecords();
+            loadDashboardData(); // Update dashboard as well
+        }
+            var record = records.find(function(r) { return r.id === recordId; });
+            if (!record) {
+                showNotification('ไม่พบข้อมูลที่ต้องการพิมพ์', 'error');
+                return;
+            }
+
+            if (record.status !== 'completed' || record.adminApproval !== 'approved') {
+                showNotification('สามารถพิมพ์ PDF ได้เฉพาะเอกสารที่อนุมัติครบทุกขั้นตอนแล้วเท่านั้น', 'error');
+                return;
+            }
+
+            // Create PDF content
+            var pdfContent = createPDFContent(record);
+            
+            // Open in new window for printing
+            var printWindow = window.open('', '_blank');
+            printWindow.document.write(pdfContent);
+            printWindow.document.close();
+            
+            // Auto print after content loads
+            printWindow.onload = function() {
+                printWindow.print();
+            };
+        }
+
+        function createPDFContent(record) {
+            var currentDate = new Date().toLocaleDateString('th-TH');
+            
+            var html = '<!DOCTYPE html>';
+            html += '<html lang="th">';
+            html += '<head>';
+            html += '<meta charset="UTF-8">';
+            html += '<meta name="viewport" content="width=device-width, initial-scale=1.0">';
+            html += '<title>เอกสารบันทึกการสอนแทน - ' + (record.subject || 'ไม่ระบุ') + '</title>';
+            html += '<style>';
+            html += '@import url("https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap");';
+            html += 'body { font-family: "Sarabun", Arial, sans-serif; margin: 0; padding: 20px; line-height: 1.6; color: #333; }';
+            html += '.header { text-align: center; border-bottom: 3px solid #2563eb; padding-bottom: 20px; margin-bottom: 30px; }';
+            html += '.school-name { font-size: 24px; font-weight: bold; color: #1e40af; margin-bottom: 5px; }';
+            html += '.document-title { font-size: 20px; font-weight: 600; color: #374151; margin-bottom: 10px; }';
+            html += '.document-id { font-size: 14px; color: #6b7280; }';
+            html += '.content-section { margin-bottom: 25px; border: 1px solid #e5e7eb; border-radius: 8px; padding: 20px; }';
+            html += '.section-title { font-size: 16px; font-weight: 600; color: #1f2937; margin-bottom: 15px; border-bottom: 2px solid #f3f4f6; padding-bottom: 5px; }';
+            html += '.info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px; }';
+            html += '.info-item { display: flex; flex-direction: column; }';
+            html += '.info-label { font-weight: 600; color: #374151; font-size: 14px; margin-bottom: 5px; }';
+            html += '.info-value { color: #111827; font-size: 14px; border-bottom: 1px dotted #d1d5db; padding-bottom: 3px; min-height: 20px; }';
+            html += '.content-text { background-color: #f9fafb; padding: 15px; border-radius: 6px; border-left: 4px solid #3b82f6; margin-bottom: 10px; }';
+            html += '.signature-section { background-color: #f0f9ff; border: 2px solid #0ea5e9; border-radius: 8px; padding: 20px; margin-top: 20px; }';
+            html += '.signature-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }';
+            html += '.signature-item { text-align: center; padding: 15px; border: 1px solid #e0e7ff; border-radius: 6px; background-color: white; }';
+            html += '.signature-title { font-weight: 600; color: #1e40af; margin-bottom: 10px; }';
+            html += '.signature-status { color: #059669; font-weight: 600; margin-bottom: 5px; }';
+            html += '.signature-box { border: 2px solid #d1d5db; height: 80px; margin: 10px 0; border-radius: 4px; background-color: #fafafa; display: flex; align-items: center; justify-content: center; color: #6b7280; font-size: 12px; }';
+            html += '.comment-section { background-color: #fffbeb; border: 1px solid #fbbf24; border-radius: 6px; padding: 15px; margin-top: 15px; }';
+            html += '.comment-title { font-weight: 600; color: #92400e; margin-bottom: 8px; }';
+            html += '.comment-text { color: #451a03; font-size: 14px; }';
+            html += '.footer { margin-top: 40px; text-align: center; font-size: 12px; color: #6b7280; border-top: 1px solid #e5e7eb; padding-top: 20px; }';
+            html += '.print-date { position: absolute; top: 20px; right: 20px; font-size: 12px; color: #6b7280; }';
+            html += '@media print { body { margin: 0; } .no-print { display: none; } }';
+            html += '</style>';
+            html += '</head>';
+            html += '<body>';
+            
+            html += '<div class="print-date">พิมพ์เมื่อ: ' + currentDate + '</div>';
+            
+            html += '<div class="header">';
+            html += '<div class="school-name">โรงเรียนสา</div>';
+            html += '<div class="document-title">เอกสารบันทึกการสอนแทน</div>';
+            html += '<div class="document-id">เลขที่เอกสาร: ' + (record.id || 'ไม่ระบุ') + '</div>';
+            html += '</div>';
+
+            html += '<div class="content-section">';
+            html += '<div class="section-title">ข้อมูลการมอบหมายงาน</div>';
+            html += '<div class="info-grid">';
+            html += '<div class="info-item"><div class="info-label">วันที่สอนแทน:</div><div class="info-value">' + (record.date || 'ไม่ระบุ') + '</div></div>';
+            html += '<div class="info-item"><div class="info-label">เวลา:</div><div class="info-value">' + (record.time || 'ไม่ระบุ') + '</div></div>';
+            html += '<div class="info-item"><div class="info-label">ชั้น/ห้อง:</div><div class="info-value">' + (record.classRoom || 'ไม่ระบุ') + '</div></div>';
+            html += '<div class="info-item"><div class="info-label">วิชา:</div><div class="info-value">' + (record.subject || 'ไม่ระบุ') + '</div></div>';
+            html += '<div class="info-item"><div class="info-label">ครูประจำวิชา (ผู้มอบหมาย):</div><div class="info-value">' + (record.regularTeacher || 'ไม่ระบุ') + '</div></div>';
+            html += '<div class="info-item"><div class="info-label">ครูสอนแทน (ผู้รับมอบ):</div><div class="info-value">' + (record.substituteTeacher || 'ไม่ระบุ') + '</div></div>';
+            html += '</div>';
+            
+            html += '<div class="info-label">เนื้อหาที่สอน:</div>';
+            html += '<div class="content-text">' + (record.content || 'ไม่ระบุ') + '</div>';
+            
+            html += '<div class="info-label">กิจกรรมการเรียนการสอน:</div>';
+            html += '<div class="content-text">' + (record.activities || 'ไม่ระบุ') + '</div>';
+            
+            html += '<div class="info-label">การบ้าน:</div>';
+            html += '<div class="content-text">' + (record.homework || 'ไม่มี') + '</div>';
+            html += '</div>';
+
+            if (record.substituteReport) {
+                html += '<div class="content-section">';
+                html += '<div class="section-title">รายงานผลการสอนจากครูสอนแทน</div>';
+                html += '<div class="info-grid">';
+                html += '<div class="info-item"><div class="info-label">จำนวนนักเรียนที่เข้าเรียน:</div><div class="info-value">' + (record.substituteReport.attendance || 'ไม่ระบุ') + '</div></div>';
+                html += '<div class="info-item"><div class="info-label">พฤติกรรมของนักเรียน:</div><div class="info-value">' + (record.substituteReport.behavior || 'ไม่ระบุ') + '</div></div>';
+                html += '</div>';
+                html += '<div class="info-label">ข้อสังเกตเพิ่มเติม:</div>';
+                html += '<div class="content-text">' + (record.substituteReport.observations || 'ไม่มี') + '</div>';
+                
+                // เพิ่มความคิดเห็นของครูที่รับมอบ
+                if (record.substituteReport.teacherComment) {
+                    html += '<div class="comment-section">';
+                    html += '<div class="comment-title">ความคิดเห็นของครูที่รับมอบหมาย:</div>';
+                    html += '<div class="comment-text">' + record.substituteReport.teacherComment + '</div>';
+                    html += '</div>';
+                }
+                html += '</div>';
+            }
+
+            html += '<div class="signature-section">';
+            html += '<div class="section-title">การลงนามและการอนุมัติ</div>';
+            
+            // แถวแรก: ครูผู้มอบและครูผู้รับมอบ
+            html += '<div class="signature-grid">';
+            html += '<div class="signature-item">';
+            html += '<div class="signature-title">ครูประจำวิชา (ผู้มอบหมาย)</div>';
+            html += '<div class="signature-status">ลงนาม</div>';
+            html += '<div class="signature-box">ลายเซ็นครูประจำวิชา</div>';
+            html += '<div style="margin-top: 5px;">ชื่อ: ' + (record.regularTeacher || '................................') + '</div>';
+            html += '<div style="font-size: 12px; color: #6b7280;">วันที่: ' + (record.createdAt || '................................') + '</div>';
+            html += '</div>';
+            
+            html += '<div class="signature-item">';
+            html += '<div class="signature-title">ครูสอนแทน (ผู้รับมอบหมาย)</div>';
+            html += '<div class="signature-status">รับทราบและดำเนินการ</div>';
+            html += '<div class="signature-box">ลายเซ็นครูสอนแทน</div>';
+            html += '<div style="margin-top: 5px;">ชื่อ: ' + (record.substituteTeacher || '................................') + '</div>';
+            html += '<div style="font-size: 12px; color: #6b7280;">วันที่: ' + (record.substituteReport?.submittedAt || '................................') + '</div>';
+            html += '</div>';
+            html += '</div>';
+            
+            // แถวที่สอง: หัวหน้าสาระและรองวิชาการ
+            html += '<div class="signature-grid">';
+            html += '<div class="signature-item">';
+            html += '<div class="signature-title">หัวหน้าสาระ</div>';
+            html += '<div class="signature-status">' + (record.headApproval === 'approved' ? 'อนุมัติ' : 'รอการอนุมัติ') + '</div>';
+            html += '<div class="signature-box">ลายเซ็นหัวหน้าสาระ</div>';
+            html += '<div style="margin-top: 5px;">ชื่อ: ................................</div>';
+            html += '<div style="font-size: 12px; color: #6b7280;">วันที่: ................................</div>';
+            if (record.headReason) {
+                html += '<div class="comment-section" style="margin-top: 10px;">';
+                html += '<div class="comment-title">ความเห็น:</div>';
+                html += '<div class="comment-text">' + record.headReason + '</div>';
+                html += '</div>';
+            }
+            html += '</div>';
+            
+            html += '<div class="signature-item">';
+            html += '<div class="signature-title">รองผู้อำนวยการฝ่ายวิชาการ</div>';
+            html += '<div class="signature-status">' + (record.adminApproval === 'approved' ? 'อนุมัติขั้นสุดท้าย' : 'รอการอนุมัติ') + '</div>';
+            html += '<div class="signature-box">ลายเซ็นรองผู้อำนวยการฯ</div>';
+            html += '<div style="margin-top: 5px;">ชื่อ: ................................</div>';
+            html += '<div style="font-size: 12px; color: #6b7280;">วันที่: ' + (record.finalApprovalDate || '................................') + '</div>';
+            if (record.adminReason) {
+                html += '<div class="comment-section" style="margin-top: 10px;">';
+                html += '<div class="comment-title">ความเห็น:</div>';
+                html += '<div class="comment-text">' + record.adminReason + '</div>';
+                html += '</div>';
+            }
+            html += '</div>';
+            html += '</div>';
+            html += '</div>';
+
+            html += '<div class="footer">';
+            html += '<div>เอกสารนี้ออกโดยระบบบันทึกการสอนแทน - โรงเรียนสา</div>';
+            html += '<div>สถานะ: ' + (record.status === 'completed' ? 'อนุมัติครบทุกขั้นตอนแล้ว' : 'อยู่ระหว่างดำเนินการ') + ' | วันที่สร้างเอกสาร: ' + currentDate + '</div>';
+            html += '</div>';
+            
+            html += '</body>';
+            html += '</html>';
+            
+            return html;
         }
         .signature-pad:hover {
             border-color: #1d4ed8;
@@ -80,6 +291,7 @@
     </style>
 </head>
 <body class="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen">
+    <!-- Header -->
     <header class="bg-white shadow-lg border-b-4 border-blue-600">
         <div class="container mx-auto px-4 py-4">
             <div class="flex items-center justify-between">
@@ -98,15 +310,16 @@
                         แดชบอร์ด
                     </button>
                     <button onclick="showSettings()" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg transition-colors">
-                        ตั้งค่า
+                        ⚙️ ตั้งค่า
                     </button>
                 </div>
             </div>
         </div>
     </header>
 
+    <!-- Main Content -->
     <main class="container mx-auto px-4 py-8">
-        <!-- Menu Section -->
+        <!-- Menu Selection -->
         <div id="menuSection" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             <div class="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow cursor-pointer" onclick="showTeacherForm()">
                 <div class="text-center">
@@ -152,9 +365,10 @@
         <!-- Settings Modal -->
         <div id="settingsModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
             <div class="bg-white rounded-xl p-8 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
-                <h2 class="text-2xl font-bold text-gray-800 mb-6 text-center">ตั้งค่าระบบ</h2>
+                <h2 class="text-2xl font-bold text-gray-800 mb-6 text-center">⚙️ ตั้งค่าระบบ</h2>
                 
                 <div class="space-y-6">
+                    <!-- Google Apps Script URL -->
                     <div>
                         <label class="block text-gray-700 font-medium mb-2">Google Apps Script URL</label>
                         <input type="url" id="scriptUrl" placeholder="https://script.google.com/macros/s/YOUR_DEPLOYMENT_ID/exec" 
@@ -162,6 +376,7 @@
                         <p class="text-sm text-gray-500 mt-1">URL ของ Google Apps Script ที่ Deploy แล้ว</p>
                     </div>
 
+                    <!-- Google Sheet ID -->
                     <div>
                         <label class="block text-gray-700 font-medium mb-2">Google Sheet ID</label>
                         <input type="text" id="sheetId" placeholder="137OMps_3meAY5lTwfR-Aq4QhqSn5ul1Eqiz8SjALyf4" 
@@ -169,6 +384,7 @@
                         <p class="text-sm text-gray-500 mt-1">ID ของ Google Sheet ที่ต้องการบันทึกข้อมูล</p>
                     </div>
 
+                    <!-- Google Drive Folder ID -->
                     <div>
                         <label class="block text-gray-700 font-medium mb-2">Google Drive Folder ID</label>
                         <input type="text" id="folderId" placeholder="1pfSdQHTZwY4VpPtpB7jyLQr4UNFdReEz" 
@@ -176,11 +392,12 @@
                         <p class="text-sm text-gray-500 mt-1">ID ของโฟลเดอร์ใน Google Drive สำหรับเก็บไฟล์แนบ</p>
                     </div>
 
+                    <!-- Test Connection -->
                     <div class="border-t pt-4">
                         <h3 class="font-semibold text-gray-800 mb-3">ทดสอบการเชื่อมต่อ</h3>
                         <button onclick="testConnection()" id="testBtn" 
                                 class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition-colors">
-                            ทดสอบการเชื่อมต่อ
+                            🔗 ทดสอบการเชื่อมต่อ
                         </button>
                         <div id="connectionStatus" class="mt-3"></div>
                     </div>
@@ -188,7 +405,7 @@
 
                 <div class="flex space-x-4 mt-6">
                     <button onclick="saveSettings()" class="flex-1 bg-green-600 hover:bg-green-700 text-white py-2 rounded-lg transition-colors">
-                        บันทึกการตั้งค่า
+                        💾 บันทึกการตั้งค่า
                     </button>
                     <button onclick="closeSettings()" class="flex-1 bg-gray-500 hover:bg-gray-600 text-white py-2 rounded-lg transition-colors">
                         ยกเลิก
@@ -231,7 +448,7 @@
         <!-- Teacher Form -->
         <div id="teacherForm" class="hidden">
             <div class="bg-white rounded-xl shadow-lg p-8">
-                <h2 class="text-2xl font-bold text-gray-800 mb-6">ครูประจำวิชา - มอบหมายงานสอนแทน</h2>
+                <h2 class="text-2xl font-bold text-gray-800 mb-6">👨‍🏫 ครูประจำวิชา - มอบหมายงานสอนแทน</h2>
                 
                 <form id="teacherAssignmentForm" class="space-y-6">
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -306,11 +523,11 @@
                             <div class="flex justify-center space-x-2 mt-3">
                                 <button type="button" onclick="clearSignature('teacherSignaturePad')" 
                                         class="px-6 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors">
-                                    ลบลายเซ็น
+                                    🗑️ ลบลายเซ็น
                                 </button>
                                 <button type="button" onclick="testSignature()" 
                                         class="px-6 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors">
-                                    ทดสอบเซ็น
+                                    ✏️ ทดสอบเซ็น
                                 </button>
                             </div>
                             <p class="text-sm text-gray-500 mt-2">คลิกและลากเพื่อเซ็นชื่อ (รองรับเมาส์และสัมผัส)</p>
@@ -334,7 +551,7 @@
         <!-- Head Form -->
         <div id="headForm" class="hidden">
             <div class="bg-white rounded-xl shadow-lg p-8">
-                <h2 class="text-2xl font-bold text-gray-800 mb-6">หัวหน้าสาระ - พิจารณาอนุมัติ</h2>
+                <h2 class="text-2xl font-bold text-gray-800 mb-6">👩‍💼 หัวหน้าสาระ - พิจารณาอนุมัติ</h2>
                 <div id="headRecordsList">
                     <!-- Records will be loaded here -->
                 </div>
@@ -345,7 +562,7 @@
         <!-- Substitute Form -->
         <div id="substituteForm" class="hidden">
             <div class="bg-white rounded-xl shadow-lg p-8">
-                <h2 class="text-2xl font-bold text-gray-800 mb-6">ครูสอนแทน - บันทึกผลการสอน</h2>
+                <h2 class="text-2xl font-bold text-gray-800 mb-6">📝 ครูสอนแทน - บันทึกผลการสอน</h2>
                 <div id="substituteRecordsList">
                     <!-- Records will be loaded here -->
                 </div>
@@ -356,7 +573,7 @@
         <!-- Admin Form -->
         <div id="adminForm" class="hidden">
             <div class="bg-white rounded-xl shadow-lg p-8">
-                <h2 class="text-2xl font-bold text-gray-800 mb-6">รองกลุ่มบริหาร - อนุมัติสุดท้าย</h2>
+                <h2 class="text-2xl font-bold text-gray-800 mb-6">⚙️ รองกลุ่มบริหาร - อนุมัติสุดท้าย</h2>
                 <div id="adminRecordsList">
                     <!-- Records will be loaded here -->
                 </div>
@@ -367,8 +584,9 @@
         <!-- Dashboard -->
         <div id="dashboard" class="hidden">
             <div class="bg-white rounded-xl shadow-lg p-8">
-                <h2 class="text-2xl font-bold text-gray-800 mb-6">แดชบอร์ด</h2>
+                <h2 class="text-2xl font-bold text-gray-800 mb-6">📊 แดชบอร์ด</h2>
                 
+                <!-- Statistics Cards -->
                 <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
                     <div class="bg-blue-100 rounded-lg p-6">
                         <div class="flex items-center justify-between">
@@ -411,6 +629,7 @@
                     </div>
                 </div>
 
+                <!-- Recent Records -->
                 <div class="bg-gray-50 rounded-lg p-6">
                     <div class="flex justify-between items-center mb-4">
                         <h3 class="text-lg font-semibold text-gray-800">รายการล่าสุด</h3>
@@ -428,8 +647,9 @@
         <!-- All Records Section -->
         <div id="allRecordsSection" class="hidden">
             <div class="bg-white rounded-xl shadow-lg p-8">
-                <h2 class="text-2xl font-bold text-gray-800 mb-6">รายการทั้งหมด</h2>
+                <h2 class="text-2xl font-bold text-gray-800 mb-6">📋 รายการทั้งหมด</h2>
                 
+                <!-- Add test completed record button for testing -->
                 <div class="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
                     <h4 class="font-semibold text-yellow-800 mb-2">สำหรับทดสอบ</h4>
                     <button onclick="createTestRecord()" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">
@@ -448,6 +668,7 @@
     </main>
 
     <script>
+        // Global variables
         var currentUser = null;
         var records = [];
         var appConfig = {
@@ -455,7 +676,8 @@
             sheetId: '137OMps_3meAY5lTwfR-Aq4QhqSn5ul1Eqiz8SjALyf4',
             folderId: '1pfSdQHTZwY4VpPtpB7jyLQr4UNFdReEz'
         };
-        
+
+        // Utility functions
         function showNotification(message, type, duration) {
             type = type || 'info';
             duration = duration || 5000;
@@ -504,6 +726,7 @@
             showSection('menuSection');
         }
 
+        // Navigation functions
         function showTeacherForm() {
             showSection('teacherForm');
         }
@@ -519,12 +742,14 @@
         }
 
         function showAdminForm() {
+            // Double check authentication for admin access
             if (currentUser !== 'admin') {
                 showNotification('คุณไม่มีสิทธิ์เข้าถึงส่วนนี้ กรุณาเข้าสู่ระบบด้วยบัญชีรองกลุ่มบริหาร', 'error');
                 showLogin();
                 return;
             }
             
+            // Additional verification prompt
             var confirmAccess = confirm('ยืนยันการเข้าถึงระบบรองกลุ่มบริหาร\nการดำเนินการในส่วนนี้จะส่งผลต่อการอนุมัติขั้นสุดท้าย');
             if (!confirmAccess) {
                 backToMenu();
@@ -540,11 +765,7 @@
             showSection('dashboard');
         }
 
-        function showAllRecords() {
-            showSection('allRecordsSection');
-            loadAllRecords();
-        }
-
+        // Settings functions
         function loadSettings() {
             var savedConfig = localStorage.getItem('appConfig');
             if (savedConfig) {
@@ -585,18 +806,19 @@
             document.getElementById('settingsModal').classList.remove('flex');
         }
 
+        // Test connection
         function testConnection() {
             var testBtn = document.getElementById('testBtn');
             var statusDiv = document.getElementById('connectionStatus');
             
             if (!appConfig.scriptUrl) {
-                statusDiv.innerHTML = '<div class="text-red-600">กรุณาใส่ Google Apps Script URL ก่อน</div>';
+                statusDiv.innerHTML = '<div class="text-red-600">❌ กรุณาใส่ Google Apps Script URL ก่อน</div>';
                 return;
             }
             
             testBtn.disabled = true;
             testBtn.innerHTML = '<div class="loading"></div> กำลังทดสอบ...';
-            statusDiv.innerHTML = '<div class="text-blue-600">กำลังทดสอบการเชื่อมต่อ...</div>';
+            statusDiv.innerHTML = '<div class="text-blue-600">🔄 กำลังทดสอบการเชื่อมต่อ...</div>';
             
             fetch(appConfig.scriptUrl, {
                 method: 'POST',
@@ -610,20 +832,21 @@
                 })
             })
             .then(function() {
-                statusDiv.innerHTML = '<div class="text-green-600">การเชื่อมต่อสำเร็จ! ระบบพร้อมใช้งาน</div>';
+                statusDiv.innerHTML = '<div class="text-green-600">✅ การเชื่อมต่อสำเร็จ! ระบบพร้อมใช้งาน</div>';
                 showNotification('ทดสอบการเชื่อมต่อสำเร็จ', 'success');
             })
             .catch(function(error) {
                 console.error('Connection test failed:', error);
-                statusDiv.innerHTML = '<div class="text-red-600">การเชื่อมต่อล้มเหลว: ' + error.message + '</div>';
+                statusDiv.innerHTML = '<div class="text-red-600">❌ การเชื่อมต่อล้มเหลว: ' + error.message + '</div>';
                 showNotification('การเชื่อมต่อล้มเหลว กรุณาตรวจสอบ URL', 'error');
             })
             .finally(function() {
                 testBtn.disabled = false;
-                testBtn.innerHTML = 'ทดสอบการเชื่อมต่อ';
+                testBtn.innerHTML = '🔗 ทดสอบการเชื่อมต่อ';
             });
         }
 
+        // Login functions
         function showLogin() {
             document.getElementById('loginModal').classList.remove('hidden');
             document.getElementById('loginModal').classList.add('flex');
@@ -646,6 +869,7 @@
                 return;
             }
             
+            // Check password for restricted users
             if (userType === 'head' && password !== 'head123') {
                 showNotification('รหัสผ่านไม่ถูกต้อง', 'error');
                 return;
@@ -660,6 +884,7 @@
             closeLogin();
             showNotification('เข้าสู่ระบบสำเร็จ', 'success');
             
+            // Redirect to appropriate form
             switch(userType) {
                 case 'teacher':
                     showTeacherForm();
@@ -676,6 +901,7 @@
             }
         }
 
+        // Signature pad functions
         function initSignaturePad(canvasId) {
             var canvas = document.getElementById(canvasId);
             if (!canvas) return;
@@ -683,6 +909,7 @@
             var ctx = canvas.getContext('2d');
             var isDrawing = false;
 
+            // Set better drawing settings
             ctx.lineCap = 'round';
             ctx.lineJoin = 'round';
             ctx.strokeStyle = '#000000';
@@ -705,19 +932,26 @@
             function startDrawing(e) {
                 isDrawing = true;
                 var pos = getEventPos(e);
+                
                 canvas.classList.add('drawing');
+                
+                // Start new path
                 ctx.beginPath();
                 ctx.moveTo(pos.x, pos.y);
+                
                 e.preventDefault();
             }
 
             function draw(e) {
                 if (!isDrawing) return;
+                
                 var pos = getEventPos(e);
+                
                 ctx.lineTo(pos.x, pos.y);
                 ctx.stroke();
                 ctx.beginPath();
                 ctx.moveTo(pos.x, pos.y);
+                
                 e.preventDefault();
             }
 
@@ -728,14 +962,18 @@
                 e.preventDefault();
             }
 
+            // Mouse events
             canvas.addEventListener('mousedown', startDrawing);
             canvas.addEventListener('mousemove', draw);
             canvas.addEventListener('mouseup', stopDrawing);
             canvas.addEventListener('mouseout', stopDrawing);
+
+            // Touch events for mobile
             canvas.addEventListener('touchstart', startDrawing);
             canvas.addEventListener('touchmove', draw);
             canvas.addEventListener('touchend', stopDrawing);
             
+            // Prevent scrolling when touching the canvas
             canvas.addEventListener('touchstart', function(e) {
                 e.preventDefault();
             }, { passive: false });
@@ -758,6 +996,7 @@
             var ctx = canvas.getContext('2d');
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             
+            // Draw sample signature
             ctx.strokeStyle = '#000000';
             ctx.lineWidth = 3;
             ctx.beginPath();
@@ -771,9 +1010,15 @@
             showNotification('ทดสอบลายเซ็นเรียบร้อย คุณสามารถลบและเซ็นใหม่ได้', 'info');
         }
 
+        // Teacher form functions
         function submitTeacherForm(e) {
             e.preventDefault();
             
+            if (!appConfig.scriptUrl) {
+                showNotification('กรุณาตั้งค่า Google Apps Script URL ในเมนูตั้งค่าก่อน', 'error');
+                return;
+            }
+
             var formData = {
                 id: 'TEACH_' + Date.now(),
                 timestamp: new Date().toISOString(),
@@ -790,19 +1035,23 @@
                 createdAt: new Date().toLocaleString('th-TH')
             };
 
+            // Get signature
             var canvas = document.getElementById('teacherSignaturePad');
             var signatureData = canvas.toDataURL();
             
+            // Check if signature is not empty - improved detection
             var ctx = canvas.getContext('2d');
             var imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
             var hasSignature = false;
             
+            // Check for any non-white pixels
             for (var i = 0; i < imageData.data.length; i += 4) {
-                var r = imageData.data[i];
-                var g = imageData.data[i + 1];
-                var b = imageData.data[i + 2];
-                var a = imageData.data[i + 3];
+                var r = imageData.data[i];     // red
+                var g = imageData.data[i + 1]; // green  
+                var b = imageData.data[i + 2]; // blue
+                var a = imageData.data[i + 3]; // alpha
                 
+                // If any pixel is not white (255,255,255) or transparent, there's a signature
                 if (a > 0 && (r < 255 || g < 255 || b < 255)) {
                     hasSignature = true;
                     break;
@@ -814,25 +1063,68 @@
                 return;
             }
 
-            records.push(formData);
-            localStorage.setItem('teachingRecords', JSON.stringify(records));
-            
-            showNotification('บันทึกข้อมูลสำเร็จ รอการอนุมัติจากหัวหน้าสาระ', 'success');
-            document.getElementById('teacherAssignmentForm').reset();
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            
-            backToMenu();
+            var submitData = {
+                action: 'addRecord',
+                data: formData,
+                signatures: {
+                    teacher: signatureData
+                },
+                files: [],
+                sheetId: appConfig.sheetId,
+                folderId: appConfig.folderId
+            };
+
+            var submitBtn = document.querySelector('#teacherForm button[type="submit"]');
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<div class="loading"></div> กำลังบันทึก...';
+
+            fetch(appConfig.scriptUrl, {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: {
+                    'Content-Type': 'text/plain',
+                },
+                body: JSON.stringify(submitData)
+            })
+            .then(function() {
+                showNotification('บันทึกข้อมูลสำเร็จ รอการอนุมัติจากหัวหน้าสาระ', 'success');
+                document.getElementById('teacherAssignmentForm').reset();
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                
+                // Save to localStorage as backup
+                records.push(formData);
+                localStorage.setItem('teachingRecords', JSON.stringify(records));
+                
+                backToMenu();
+            })
+            .catch(function(error) {
+                console.error('Submit failed:', error);
+                showNotification('เกิดข้อผิดพลาดในการบันทึก กรุณาลองใหม่', 'error');
+            })
+            .finally(function() {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = 'บันทึกข้อมูล';
+            });
         }
 
+        // Load records functions
         function loadHeadRecords() {
             var container = document.getElementById('headRecordsList');
             
+            // แสดงข้อมูลการดีบัก
+            console.log('กำลังโหลดข้อมูลหัวหน้า, รายการทั้งหมด:', records.length);
+            
+            // เงื่อนไขที่ยืดหยุ่นขึ้น - แสดงรายการที่ยังไม่ได้อนุมัติจากหัวหน้า
             var pendingRecords = records.filter(function(record) {
+                console.log('ตรวจสอบ record:', record.id, 'headApproval:', record.headApproval, 'status:', record.status);
                 return (!record.headApproval || record.headApproval === '' || record.headApproval === 'pending') && 
                        (!record.status || record.status === 'pending' || record.status === '');
             });
             
+            console.log('รายการที่รอการอนุมัติ:', pendingRecords.length);
+            
             if (pendingRecords.length === 0) {
+                // แสดงรายการทั้งหมดเพื่อดูสถานะ
                 var html = '<div class="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded">';
                 html += '<h4 class="font-semibold text-yellow-800">ไม่มีรายการที่รออนุมัติ</h4>';
                 html += '<p class="text-sm text-yellow-700">รายการทั้งหมด: ' + records.length + ' รายการ</p>';
@@ -853,9 +1145,11 @@
                 html += '<p>ชั้น: ' + (record.classRoom || 'ไม่ระบุ') + ' | วันที่: ' + (record.date || 'ไม่ระบุ') + ' | เวลา: ' + (record.time || 'ไม่ระบุ') + '</p>';
                 html += '<p>ครูประจำ: ' + (record.regularTeacher || 'ไม่ระบุ') + ' | ครูสอนแทน: ' + (record.substituteTeacher || 'ไม่ระบุ') + '</p>';
                 html += '<p>เนื้อหา: ' + (record.content || 'ไม่ระบุ') + '</p>';
+                html += '<p class="text-sm text-gray-600">สถานะปัจจุบัน: ' + (record.status || 'ไม่มี') + '</p>';
                 
+                // Add signature area for head approval
                 html += '<div class="mt-4 border-t pt-4">';
-                html += '<h5 class="font-medium text-gray-700 mb-2">ลายเซ็นหัวหน้าสาระ</h5>';
+                html += '<h5 class="font-medium text-gray-700 mb-2">ลายเซ็นหัวหน้าสาระ (สำหรับการอนุมัติ)</h5>';
                 html += '<canvas id="headSignature_' + record.id + '" width="400" height="120" ';
                 html += 'class="signature-pad w-full bg-white rounded cursor-crosshair border-2 border-green-300 mb-2"></canvas>';
                 html += '<div class="flex space-x-2 mb-4">';
@@ -872,6 +1166,7 @@
             }
             container.innerHTML = html;
             
+            // Initialize signature pads for each record after a short delay
             setTimeout(function() {
                 for (var i = 0; i < pendingRecords.length; i++) {
                     initSignaturePad('headSignature_' + pendingRecords[i].id);
@@ -879,10 +1174,11 @@
             }, 100);
         }
 
+        // ฟังก์ชันใหม่แสดงรายการทั้งหมดสำหรับหัวหน้า
         function showAllForHead() {
             var container = document.getElementById('headRecordsList');
             var html = '<div class="mb-4">';
-            html += '<h4 class="font-semibold text-gray-800 mb-3">รายการทั้งหมด</h4>';
+            html += '<h4 class="font-semibold text-gray-800 mb-3">รายการทั้งหมด (เพื่อตรวจสอบ)</h4>';
             
             for (var i = 0; i < records.length; i++) {
                 var record = records[i];
@@ -912,6 +1208,7 @@
             container.innerHTML = html;
         }
 
+        // ฟังก์ชันอนุมัติด่วนโดยไม่ต้องลายเซ็น
         function forceApproveRecord(recordId) {
             if (!confirm('ยืนยันการอนุมัติด่วนสำหรับรายการนี้?')) {
                 return;
@@ -928,69 +1225,7 @@
             
             localStorage.setItem('teachingRecords', JSON.stringify(records));
             showNotification('อนุมัติรายการเรียบร้อย', 'success');
-            showAllForHead();
-        }
-
-        function approveRecordWithSignature(recordId) {
-            var canvas = document.getElementById('headSignature_' + recordId);
-            if (!canvas) {
-                showNotification('ไม่พบพื้นที่ลายเซ็น', 'error');
-                return;
-            }
-
-            var ctx = canvas.getContext('2d');
-            var imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-            var hasSignature = false;
-            
-            for (var i = 0; i < imageData.data.length; i += 4) {
-                var r = imageData.data[i];
-                var g = imageData.data[i + 1];
-                var b = imageData.data[i + 2];
-                var a = imageData.data[i + 3];
-                
-                if (a > 0 && (r < 255 || g < 255 || b < 255)) {
-                    hasSignature = true;
-                    break;
-                }
-            }
-            
-            if (!hasSignature) {
-                showNotification('กรุณาเซ็นลายเซ็นก่อนอนุมัติ', 'error');
-                return;
-            }
-
-            for (var i = 0; i < records.length; i++) {
-                if (records[i].id === recordId) {
-                    records[i].headApproval = 'approved';
-                    records[i].headReason = 'อนุมัติโดยหัวหน้าสาระพร้อมลายเซ็น';
-                    records[i].status = 'head_approved';
-                    break;
-                }
-            }
-            
-            localStorage.setItem('teachingRecords', JSON.stringify(records));
-            showNotification('อนุมัติรายการเรียบร้อย พร้อมบันทึกลายเซ็น', 'success');
-            
-            setTimeout(function() {
-                loadHeadRecords();
-            }, 500);
-        }
-
-        function rejectRecord(recordId) {
-            var reason = prompt('เหตุผลที่ไม่อนุมัติ:');
-            if (reason) {
-                for (var i = 0; i < records.length; i++) {
-                    if (records[i].id === recordId) {
-                        records[i].headApproval = 'rejected';
-                        records[i].headReason = reason;
-                        records[i].status = 'rejected';
-                        break;
-                    }
-                }
-                localStorage.setItem('teachingRecords', JSON.stringify(records));
-                showNotification('ไม่อนุมัติรายการเรียบร้อย', 'success');
-                loadHeadRecords();
-            }
+            showAllForHead(); // รีเฟรชการแสดงผล
         }
 
         function loadSubstituteRecords() {
@@ -1018,35 +1253,12 @@
                     html += '</div>';
                 } else {
                     html += '<div class="mt-2 p-3 bg-green-50 rounded">';
-                    html += '<p class="text-green-800">บันทึกผลการสอนแล้ว</p>';
+                    html += '<p class="text-green-800">✅ บันทึกผลการสอนแล้ว</p>';
                     html += '</div>';
                 }
                 html += '</div>';
             }
             container.innerHTML = html;
-        }
-
-        function showSubstituteReportForm(recordId) {
-            var attendance = prompt('จำนวนนักเรียนที่เข้าเรียน:');
-            var behavior = prompt('พฤติกรรมของนักเรียน:');
-            var observations = prompt('ข้อสังเกตเพิ่มเติม:');
-            
-            if (attendance && behavior) {
-                for (var i = 0; i < records.length; i++) {
-                    if (records[i].id === recordId) {
-                        records[i].substituteReport = {
-                            attendance: attendance,
-                            behavior: behavior,
-                            observations: observations || '',
-                            submittedAt: new Date().toLocaleString('th-TH')
-                        };
-                        break;
-                    }
-                }
-                localStorage.setItem('teachingRecords', JSON.stringify(records));
-                showNotification('บันทึกผลการสอนเรียบร้อย', 'success');
-                loadSubstituteRecords();
-            }
         }
 
         function loadAdminRecords() {
@@ -1069,6 +1281,7 @@
                 html += '<p>ครูประจำ: ' + record.regularTeacher + ' | ครูสอนแทน: ' + record.substituteTeacher + '</p>';
                 html += '<p>เนื้อหา: ' + record.content + '</p>';
                 
+                // Show substitute report if available
                 if (record.substituteReport) {
                     html += '<div class="mt-3 p-3 bg-blue-50 rounded">';
                     html += '<h6 class="font-medium text-blue-800">รายงานครูสอนแทน</h6>';
@@ -1080,13 +1293,654 @@
                     html += '</div>';
                 }
                 
+                // Add reason input field with stricter requirements
                 html += '<div class="mt-4 border-t pt-4 bg-red-50 p-4 rounded">';
-                html += '<h5 class="font-semibold text-red-800 mb-2">เหตุผลในการพิจารณา</h5>';
-                html += '<textarea id="adminReason_' + record.id + '" rows="3" placeholder="กรุณาระบุเหตุผลในการอนุมัติหรือไม่อนุมัติ" ';
+                html += '<h5 class="font-semibold text-red-800 mb-2">⚠️ ข้อมูลจำเป็นสำหรับการอนุมัติ</h5>';
+                html += '<label class="block text-gray-700 font-medium mb-2">เหตุผลในการพิจารณา (บังคับกรอก)</label>';
+                html += '<textarea id="adminReason_' + record.id + '" rows="3" placeholder="กรุณาระบุเหตุผลที่ชัดเจนในการอนุมัติหรือไม่อนุมัติ (ข้อมูลนี้จำเป็นและจะถูกบันทึก)" ';
                 html += 'class="w-full border-2 border-red-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-red-500 focus:border-red-500 mb-3" required></textarea>';
+                html += '<p class="text-sm text-red-600">* กรุณากรอกเหตุผลอย่างน้อย 10 ตัวอักษร</p>';
                 html += '</div>';
                 
+                // Add signature area for admin approval with emphasis
                 html += '<div class="mt-4 bg-purple-50 p-4 rounded">';
-                html += '<h5 class="font-semibold text-purple-800 mb-2">ลายเซ็นรองกลุ่มบริหาร</h5>';
+                html += '<h5 class="font-semibold text-purple-800 mb-2">📝 ลายเซ็นรองกลุ่มบริหาร (บังคับ)</h5>';
                 html += '<canvas id="adminSignature_' + record.id + '" width="400" height="120" ';
-                html += 'class="signature-pad w-full bg-white rounded cursor-crosshair border-3 border-purple-
+                html += 'class="signature-pad w-full bg-white rounded cursor-crosshair border-3 border-purple-400 mb-2"></canvas>';
+                html += '<div class="flex space-x-2 mb-2">';
+                html += '<button onclick="clearSignature(\'adminSignature_' + record.id + '\')" ';
+                html += 'class="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600">ลบลายเซ็น</button>';
+                html += '</div>';
+                html += '<p class="text-sm text-purple-600">* ลายเซ็นจำเป็นสำหรับการยืนยันตัวตนและรับผิดชอบการตัดสินใจ</p>';
+                html += '</div>';
+                
+                html += '<div class="mt-6 space-x-2">';
+                html += '<button onclick="finalApproveWithSignature(\'' + record.id + '\')" class="bg-green-600 text-white px-6 py-3 rounded font-semibold hover:bg-green-700">✅ อนุมัติขั้นสุดท้าย</button>';
+                html += '<button onclick="finalRejectWithSignature(\'' + record.id + '\')" class="bg-red-600 text-white px-6 py-3 rounded font-semibold hover:bg-red-700">❌ ไม่อนุมัติ</button>';
+                html += '</div>';
+                html += '</div>';
+            }
+            container.innerHTML = html;
+            
+            // Initialize signature pads for each record after a short delay
+            setTimeout(function() {
+                for (var i = 0; i < readyRecords.length; i++) {
+                    initSignaturePad('adminSignature_' + readyRecords[i].id);
+                }
+            }, 100);
+        }
+
+        // Data loading functions from Google Sheets
+        function loadRecordsFromSheet() {
+            if (!appConfig.scriptUrl) {
+                console.log('No script URL configured, using localStorage only');
+                return;
+            }
+
+            var requestData = {
+                action: 'getRecords',
+                sheetId: appConfig.sheetId
+            };
+
+            fetch(appConfig.scriptUrl, {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: {
+                    'Content-Type': 'text/plain',
+                },
+                body: JSON.stringify(requestData)
+            })
+            .then(function(response) {
+                // Note: Due to no-cors mode, we can't read the response
+                // The data will be stored in Google Sheets
+                console.log('Request sent to load records from Google Sheets');
+            })
+            .catch(function(error) {
+                console.error('Failed to load records from Google Sheets:', error);
+            });
+        }
+
+        function loadDashboardData() {
+            // First load from localStorage
+            var localRecords = JSON.parse(localStorage.getItem('teachingRecords') || '[]');
+            
+            // Try to get fresh data from Google Sheets
+            if (appConfig.scriptUrl) {
+                var requestData = {
+                    action: 'getStatistics',
+                    sheetId: appConfig.sheetId
+                };
+
+                fetch(appConfig.scriptUrl, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: {
+                        'Content-Type': 'text/plain',
+                    },
+                    body: JSON.stringify(requestData)
+                })
+                .then(function() {
+                    console.log('Statistics request sent to Google Sheets');
+                })
+                .catch(function(error) {
+                    console.error('Failed to get statistics from Google Sheets:', error);
+                });
+            }
+
+            // Use local data for display
+            updateDashboardDisplay(localRecords);
+        }
+
+        function updateDashboardDisplay(records) {
+            var total = records.length;
+            var pending = records.filter(function(r) { 
+                return r.status === 'pending' || (!r.headApproval && !r.adminApproval); 
+            }).length;
+            var approved = records.filter(function(r) { 
+                return r.adminApproval === 'approved' || r.status === 'completed'; 
+            }).length;
+            var rejected = records.filter(function(r) { 
+                return r.adminApproval === 'rejected' || r.headApproval === 'rejected' || r.status === 'rejected'; 
+            }).length;
+            
+            // Update statistics display
+            document.getElementById('totalRecords').textContent = total;
+            document.getElementById('pendingRecords').textContent = pending;
+            document.getElementById('approvedRecords').textContent = approved;
+            document.getElementById('rejectedRecords').textContent = rejected;
+            
+            // Update recent records
+            var recentContainer = document.getElementById('recentRecords');
+            if (total === 0) {
+                recentContainer.innerHTML = '<p class="text-gray-500">ไม่มีข้อมูล</p>';
+                return;
+            }
+            
+            var recentRecords = records.slice(-5).reverse();
+            var html = '';
+            for (var i = 0; i < recentRecords.length; i++) {
+                var record = recentRecords[i];
+                var statusText = getStatusText(record);
+                var statusClass = getStatusClass(record);
+                
+                html += '<div class="record-card ' + statusClass + '">';
+                html += '<div class="flex justify-between items-start">';
+                html += '<div>';
+                html += '<h4 class="font-semibold text-gray-800">' + (record.subject || 'ไม่ระบุวิชา') + ' - ' + (record.classRoom || 'ไม่ระบุห้อง') + '</h4>';
+                html += '<p>ครูประจำ: ' + (record.regularTeacher || 'ไม่ระบุ') + ' | วันที่: ' + (record.date || 'ไม่ระบุ') + '</p>';
+                html += '<span class="inline-block px-2 py-1 text-xs rounded ' + getStatusBadgeClass(record) + '">';
+                html += statusText;
+                html += '</span>';
+                html += '</div>';
+                
+                // Add PDF button - ยืดหยุ่นเงื่อนไข
+                html += '<div class="flex flex-col space-y-1">';
+                if (record.headApproval === 'approved' || record.adminApproval === 'approved' || record.status === 'completed') {
+                    html += '<button onclick="generatePDF(\'' + record.id + '\')" ';
+                    html += 'class="bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700">';
+                    html += '📄 PDF';
+                    html += '</button>';
+                }
+                // เพิ่มปุ่มทดสอบสำหรับทุกรายการ
+                html += '<button onclick="generatePDF(\'' + record.id + '\')" ';
+                html += 'class="bg-green-600 text-white px-2 py-1 rounded text-xs hover:bg-green-700">';
+                html += '🧪 ทดสอบ';
+                html += '</button>';
+                html += '</div>';
+                
+                html += '</div>';
+                html += '</div>';
+            }
+            recentContainer.innerHTML = html;
+        }
+
+        function loadAllRecords() {
+            var container = document.getElementById('allRecordsList');
+            if (records.length === 0) {
+                container.innerHTML = '<p class="text-gray-600">ไม่มีข้อมูล</p>';
+                return;
+            }
+            
+            var html = '';
+            for (var i = records.length - 1; i >= 0; i--) {
+                var record = records[i];
+                var statusText = getStatusText(record);
+                var statusClass = getStatusClass(record);
+                
+                html += '<div class="record-card ' + statusClass + ' mb-4">';
+                html += '<div class="flex justify-between items-start">';
+                html += '<div class="flex-1">';
+                html += '<h4 class="font-semibold text-gray-800 mb-2">' + (record.subject || 'ไม่ระบุวิชา') + ' - ' + (record.classRoom || 'ไม่ระบุห้อง') + '</h4>';
+                html += '<div class="grid grid-cols-2 gap-4 text-sm">';
+                html += '<p><strong>ครูประจำ:</strong> ' + (record.regularTeacher || 'ไม่ระบุ') + '</p>';
+                html += '<p><strong>ครูสอนแทน:</strong> ' + (record.substituteTeacher || 'ไม่ระบุ') + '</p>';
+                html += '<p><strong>วันที่สอน:</strong> ' + (record.date || 'ไม่ระบุ') + '</p>';
+                html += '<p><strong>เวลา:</strong> ' + (record.time || 'ไม่ระบุ') + '</p>';
+                html += '</div>';
+                html += '<p class="mt-2"><strong>เนื้อหา:</strong> ' + (record.content || 'ไม่ระบุ') + '</p>';
+                html += '</div>';
+                
+                html += '<div class="flex flex-col items-end space-y-2">';
+                html += '<span class="px-3 py-1 text-sm rounded ' + getStatusBadgeClass(record) + '">';
+                html += statusText;
+                html += '</span>';
+                
+                // แสดงปุ่ม PDF สำหรับทุกรายการ (เพื่อทดสอบ)
+                html += '<div class="flex flex-col space-y-1">';
+                html += '<button onclick="generatePDF(\'' + record.id + '\')" ';
+                html += 'class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">';
+                html += '📄 พิมพ์ PDF';
+                html += '</button>';
+                
+                // เพิ่มปุ่มทดสอบข้อมูล
+                html += '<button onclick="showRecordInfo(\'' + record.id + '\')" ';
+                html += 'class="bg-gray-600 text-white px-4 py-1 rounded hover:bg-gray-700 text-sm">';
+                html += 'ดูข้อมูล';
+                html += '</button>';
+                html += '</div>';
+                
+                html += '</div>';
+                html += '</div>';
+                html += '</div>';
+            }
+            container.innerHTML = html;
+        }
+
+        // ฟังก์ชันดูข้อมูลรายละเอียด
+        function showRecordInfo(recordId) {
+            var record = records.find(function(r) { return r.id === recordId; });
+            if (!record) {
+                alert('ไม่พบข้อมูล');
+                return;
+            }
+            
+            var info = 'ข้อมูลรายละเอียด:\n\n';
+            info += 'ID: ' + record.id + '\n';
+            info += 'วิชา: ' + (record.subject || 'ไม่ระบุ') + '\n';
+            info += 'สถานะ: ' + (record.status || 'ไม่ระบุ') + '\n';
+            info += 'หัวหน้าอนุมัติ: ' + (record.headApproval || 'ไม่ได้อนุมัติ') + '\n';
+            info += 'รองอนุมัติ: ' + (record.adminApproval || 'ไม่ได้อนุมัติ') + '\n';
+            
+            alert(info);
+        }
+
+        function getStatusText(record) {
+            if (record.adminApproval === 'approved' || record.status === 'completed') {
+                return 'อนุมัติแล้ว';
+            } else if (record.adminApproval === 'rejected' || record.headApproval === 'rejected' || record.status === 'rejected') {
+                return 'ไม่อนุมัติ';
+            } else if (record.headApproval === 'approved') {
+                return 'รอการอนุมัติจากรอง';
+            } else {
+                return 'รอการอนุมัติ';
+            }
+        }
+
+        function getStatusClass(record) {
+            if (record.adminApproval === 'approved' || record.status === 'completed') {
+                return 'status-approved';
+            } else if (record.adminApproval === 'rejected' || record.headApproval === 'rejected' || record.status === 'rejected') {
+                return 'status-rejected';
+            } else {
+                return 'status-pending';
+            }
+        }
+
+        function getStatusBadgeClass(record) {
+            if (record.adminApproval === 'approved' || record.status === 'completed') {
+                return 'bg-green-100 text-green-800';
+            } else if (record.adminApproval === 'rejected' || record.headApproval === 'rejected' || record.status === 'rejected') {
+                return 'bg-red-100 text-red-800';
+            } else {
+                return 'bg-yellow-100 text-yellow-800';
+            }
+        }
+
+        // Record action functions
+        function approveRecord(recordId) {
+            var record = records.find(function(r) { return r.id === recordId; });
+            if (record) {
+                record.headApproval = 'approved';
+                record.headReason = 'อนุมัติโดยหัวหน้าสาระ';
+                localStorage.setItem('teachingRecords', JSON.stringify(records));
+                showNotification('อนุมัติรายการเรียบร้อย', 'success');
+                loadHeadRecords();
+            }
+        }
+
+        function approveRecordWithSignature(recordId) {
+            var canvas = document.getElementById('headSignature_' + recordId);
+            if (!canvas) {
+                showNotification('ไม่พบพื้นที่ลายเซ็น', 'error');
+                return;
+            }
+
+            // Check if signature exists
+            var ctx = canvas.getContext('2d');
+            var imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            var hasSignature = false;
+            
+            for (var i = 0; i < imageData.data.length; i += 4) {
+                var r = imageData.data[i];
+                var g = imageData.data[i + 1];
+                var b = imageData.data[i + 2];
+                var a = imageData.data[i + 3];
+                
+                if (a > 0 && (r < 255 || g < 255 || b < 255)) {
+                    hasSignature = true;
+                    break;
+                }
+            }
+            
+            if (!hasSignature) {
+                showNotification('กรุณาเซ็นลายเซ็นก่อนอนุมัติ', 'error');
+                return;
+            }
+
+            var signatureData = canvas.toDataURL();
+            
+            // Find and update the record
+            for (var i = 0; i < records.length; i++) {
+                if (records[i].id === recordId) {
+                    records[i].headApproval = 'approved';
+                    records[i].headReason = 'อนุมัติโดยหัวหน้าสาระพร้อมลายเซ็น';
+                    records[i].headSignature = signatureData;
+                    records[i].status = 'head_approved';
+                    break;
+                }
+            }
+            
+            // Update localStorage immediately
+            localStorage.setItem('teachingRecords', JSON.stringify(records));
+            
+            // Send update to Google Sheet
+            if (appConfig.scriptUrl) {
+                var updateData = {
+                    action: 'updateRecord',
+                    recordId: recordId,
+                    updateData: {
+                        headApproval: 'approved',
+                        headReason: 'อนุมัติโดยหัวหน้าสาระพร้อมลายเซ็น',
+                        status: 'head_approved'
+                    },
+                    headSignature: signatureData,
+                    sheetId: appConfig.sheetId,
+                    folderId: appConfig.folderId
+                };
+
+                fetch(appConfig.scriptUrl, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: {
+                        'Content-Type': 'text/plain',
+                    },
+                    body: JSON.stringify(updateData)
+                })
+                .then(function() {
+                    console.log('Head approval sent to Google Sheet');
+                })
+                .catch(function(error) {
+                    console.error('Failed to send head approval to Google Sheet:', error);
+                });
+            }
+            
+            showNotification('อนุมัติรายการเรียบร้อย พร้อมบันทึกลายเซ็น', 'success');
+            
+            // Reload the head records to update the display
+            setTimeout(function() {
+                loadHeadRecords();
+            }, 500);
+        }
+
+        function rejectRecord(recordId) {
+            var reason = prompt('เหตุผลที่ไม่อนุมัติ:');
+            if (reason) {
+                var record = records.find(function(r) { return r.id === recordId; });
+                if (record) {
+                    record.headApproval = 'rejected';
+                    record.headReason = reason;
+                    record.status = 'rejected';
+                    localStorage.setItem('teachingRecords', JSON.stringify(records));
+                    showNotification('ไม่อนุมัติรายการเรียบร้อย', 'success');
+                    loadHeadRecords();
+                }
+            }
+        }
+
+        function finalApprove(recordId) {
+            var record = records.find(function(r) { return r.id === recordId; });
+            if (record) {
+                record.adminApproval = 'approved';
+                record.adminReason = 'อนุมัติโดยรองกลุ่มบริหาร';
+                record.status = 'completed';
+                localStorage.setItem('teachingRecords', JSON.stringify(records));
+                showNotification('อนุมัติขั้นสุดท้ายเรียบร้อย', 'success');
+                loadAdminRecords();
+            }
+        }
+
+        function finalApproveWithSignature(recordId) {
+            var reasonTextarea = document.getElementById('adminReason_' + recordId);
+            var canvas = document.getElementById('adminSignature_' + recordId);
+            
+            if (!canvas) {
+                showNotification('ไม่พบพื้นที่ลายเซ็น', 'error');
+                return;
+            }
+
+            var reason = reasonTextarea ? reasonTextarea.value.trim() : '';
+            if (!reason) {
+                showNotification('กรุณาระบุเหตุผลในการพิจารณา', 'error');
+                return;
+            }
+
+            // Check if signature exists
+            var ctx = canvas.getContext('2d');
+            var imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            var hasSignature = false;
+            
+            for (var i = 0; i < imageData.data.length; i += 4) {
+                var r = imageData.data[i];
+                var g = imageData.data[i + 1];
+                var b = imageData.data[i + 2];
+                var a = imageData.data[i + 3];
+                
+                if (a > 0 && (r < 255 || g < 255 || b < 255)) {
+                    hasSignature = true;
+                    break;
+                }
+            }
+            
+            if (!hasSignature) {
+                showNotification('กรุณาเซ็นลายเซ็นก่อนอนุมัติ', 'error');
+                return;
+            }
+
+            var signatureData = canvas.toDataURL();
+            
+            // Find and update the record
+            for (var i = 0; i < records.length; i++) {
+                if (records[i].id === recordId) {
+                    records[i].adminApproval = 'approved';
+                    records[i].adminReason = reason;
+                    records[i].adminSignature = signatureData;
+                    records[i].status = 'completed';
+                    break;
+                }
+            }
+            
+            // Update localStorage immediately
+            localStorage.setItem('teachingRecords', JSON.stringify(records));
+            
+            // Send update to Google Sheet
+            if (appConfig.scriptUrl) {
+                var updateData = {
+                    action: 'updateRecord',
+                    recordId: recordId,
+                    updateData: {
+                        adminApproval: 'approved',
+                        adminReason: reason,
+                        status: 'completed'
+                    },
+                    adminSignature: signatureData,
+                    sheetId: appConfig.sheetId,
+                    folderId: appConfig.folderId
+                };
+
+                fetch(appConfig.scriptUrl, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: {
+                        'Content-Type': 'text/plain',
+                    },
+                    body: JSON.stringify(updateData)
+                })
+                .then(function() {
+                    console.log('Admin approval sent to Google Sheet');
+                })
+                .catch(function(error) {
+                    console.error('Failed to send admin approval to Google Sheet:', error);
+                });
+            }
+            
+            showNotification('อนุมัติขั้นสุดท้ายเรียบร้อย พร้อมบันทึกลายเซ็น', 'success');
+            
+            // Reload the admin records to update the display
+            setTimeout(function() {
+                loadAdminRecords();
+            }, 500);
+        }
+
+        function finalReject(recordId) {
+            var reason = prompt('เหตุผลที่ไม่อนุมัติ:');
+            if (reason) {
+                var record = records.find(function(r) { return r.id === recordId; });
+                if (record) {
+                    record.adminApproval = 'rejected';
+                    record.adminReason = reason;
+                    record.status = 'rejected';
+                    localStorage.setItem('teachingRecords', JSON.stringify(records));
+                    showNotification('ไม่อนุมัติรายการเรียบร้อย', 'success');
+                    loadAdminRecords();
+                }
+            }
+        }
+
+        function finalRejectWithSignature(recordId) {
+            var reasonTextarea = document.getElementById('adminReason_' + recordId);
+            var canvas = document.getElementById('adminSignature_' + recordId);
+            
+            if (!canvas) {
+                showNotification('ไม่พบพื้นที่ลายเซ็น', 'error');
+                return;
+            }
+
+            var reason = reasonTextarea ? reasonTextarea.value.trim() : '';
+            if (!reason) {
+                showNotification('กรุณาระบุเหตุผลในการพิจารณา', 'error');
+                return;
+            }
+
+            // Check if signature exists
+            var ctx = canvas.getContext('2d');
+            var imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            var hasSignature = false;
+            
+            for (var i = 0; i < imageData.data.length; i += 4) {
+                var r = imageData.data[i];
+                var g = imageData.data[i + 1];
+                var b = imageData.data[i + 2];
+                var a = imageData.data[i + 3];
+                
+                if (a > 0 && (r < 255 || g < 255 || b < 255)) {
+                    hasSignature = true;
+                    break;
+                }
+            }
+            
+            if (!hasSignature) {
+                showNotification('กรุณาเซ็นลายเซ็นก่อนไม่อนุมัติ', 'error');
+                return;
+            }
+
+            var signatureData = canvas.toDataURL();
+            
+            // Find and update the record
+            for (var i = 0; i < records.length; i++) {
+                if (records[i].id === recordId) {
+                    records[i].adminApproval = 'rejected';
+                    records[i].adminReason = reason;
+                    records[i].adminSignature = signatureData;
+                    records[i].status = 'rejected';
+                    break;
+                }
+            }
+            
+            // Update localStorage immediately
+            localStorage.setItem('teachingRecords', JSON.stringify(records));
+            
+            // Send update to Google Sheet
+            if (appConfig.scriptUrl) {
+                var updateData = {
+                    action: 'updateRecord',
+                    recordId: recordId,
+                    updateData: {
+                        adminApproval: 'rejected',
+                        adminReason: reason,
+                        status: 'rejected'
+                    },
+                    adminSignature: signatureData,
+                    sheetId: appConfig.sheetId,
+                    folderId: appConfig.folderId
+                };
+
+                fetch(appConfig.scriptUrl, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: {
+                        'Content-Type': 'text/plain',
+                    },
+                    body: JSON.stringify(updateData)
+                })
+                .then(function() {
+                    console.log('Admin rejection sent to Google Sheet');
+                })
+                .catch(function(error) {
+                    console.error('Failed to send admin rejection to Google Sheet:', error);
+                });
+            }
+            
+            showNotification('บันทึกการไม่อนุมัติเรียบร้อย พร้อมบันทึกลายเซ็น', 'success');
+            
+            // Reload the admin records to update the display
+            setTimeout(function() {
+                loadAdminRecords();
+            }, 500);
+        }
+
+        function showSubstituteReportForm(recordId) {
+            var attendance = prompt('จำนวนนักเรียนที่เข้าเรียน:');
+            var behavior = prompt('พฤติกรรมของนักเรียน:');
+            var observations = prompt('ข้อสังเกตเพิ่มเติม:');
+            
+            if (attendance && behavior) {
+                var record = records.find(function(r) { return r.id === recordId; });
+                if (record) {
+                    record.substituteReport = {
+                        attendance: attendance,
+                        behavior: behavior,
+                        observations: observations || '',
+                        submittedAt: new Date().toLocaleString('th-TH')
+                    };
+                    localStorage.setItem('teachingRecords', JSON.stringify(records));
+                    showNotification('บันทึกผลการสอนเรียบร้อย', 'success');
+                    loadSubstituteRecords();
+                }
+            }
+        }
+
+        // User type change handler
+        document.getElementById('userType').addEventListener('change', function() {
+            var userType = this.value;
+            var passwordField = document.getElementById('passwordField');
+            
+            if (userType === 'head' || userType === 'admin') {
+                passwordField.classList.remove('hidden');
+            } else {
+                passwordField.classList.add('hidden');
+            }
+        });
+
+        // Teacher form submit handler
+        document.getElementById('teacherAssignmentForm').addEventListener('submit', submitTeacherForm);
+
+        // Initialize the app
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Initializing teaching substitute system...');
+            
+            // Initialize signature pad
+            initSignaturePad('teacherSignaturePad');
+            
+            // Load settings and records
+            loadSettings();
+            records = JSON.parse(localStorage.getItem('teachingRecords') || '[]');
+            
+            // Try to load fresh data from Google Sheets
+            loadRecordsFromSheet();
+            
+            // Show menu by default
+            showSection('menuSection');
+            
+            // Show setup notification if no script URL configured
+            if (!appConfig.scriptUrl || appConfig.scriptUrl.includes('YOUR_DEPLOYMENT_ID')) {
+                setTimeout(function() {
+                    showNotification('กรุณาตั้งค่า Google Apps Script URL ในเมนูตั้งค่า เพื่อเชื่อมต่อกับ Google Sheets', 'info', 10000);
+                }, 2000);
+            }
+            
+            console.log('Application initialized successfully');
+            console.log('Records loaded:', records.length);
+        });
+    </script>
+</body>
+</html>
