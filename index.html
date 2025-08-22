@@ -140,6 +140,10 @@
                         <label class="block text-gray-700 font-medium mb-2">รหัสผ่าน</label>
                         <input type="password" id="password" class="w-full border border-gray-300 rounded-lg px-4 py-2">
                     </div>
+                    <div id="teacherNameField" class="hidden">
+                        <label class="block text-gray-700 font-medium mb-2">ชื่อครูสอนแทน</label>
+                        <input type="text" id="teacherName" placeholder="ระบุชื่อครูสอนแทนของคุณ" class="w-full border border-gray-300 rounded-lg px-4 py-2">
+                    </div>
                     <div class="flex space-x-4">
                         <button onclick="login()" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg">เข้าสู่ระบบ</button>
                         <button onclick="closeLogin()" class="flex-1 bg-gray-500 hover:bg-gray-600 text-white py-2 rounded-lg">ยกเลิก</button>
@@ -560,6 +564,7 @@
         function login() {
             const userType = document.getElementById('userType').value;
             const password = document.getElementById('password').value;
+            const teacherName = document.getElementById('teacherName').value;
             
             if (!userType) {
                 showNotification('กรุณาเลือกประเภทผู้ใช้', 'error');
@@ -576,7 +581,17 @@
                 return;
             }
             
+            if (userType === 'substitute' && !teacherName.trim()) {
+                showNotification('กรุณาระบุชื่อครูสอนแทน', 'error');
+                return;
+            }
+            
             currentUser = userType;
+            // เก็บชื่อครูสอนแทนสำหรับการกรองข้อมูล
+            if (userType === 'substitute') {
+                currentUser = { type: 'substitute', name: teacherName.trim() };
+            }
+            
             closeLogin();
             showNotification('เข้าสู่ระบบสำเร็จ', 'success');
             
@@ -820,15 +835,29 @@
 
         function loadSubstituteRecords() {
             const container = document.getElementById('substituteRecordsList');
-            const approvedRecords = records.filter(record => record.headApproval === 'approved' && !record.substituteReport);
             
-            if (approvedRecords.length === 0) {
-                container.innerHTML = '<p class="text-gray-600">ไม่มีรายการที่ต้องบันทึกผลการสอน</p>';
+            // กรองข้อมูลเฉพาะครูสอนแทนที่ล็อกอิน
+            let filteredRecords = records.filter(record => record.headApproval === 'approved' && !record.substituteReport);
+            
+            // ถ้าเป็นครูสอนแทนที่ระบุชื่อ ให้แสดงเฉพาะงานที่ได้รับมอบหมาย
+            if (currentUser && currentUser.type === 'substitute') {
+                const currentTeacherName = currentUser.name;
+                filteredRecords = filteredRecords.filter(record => 
+                    record.substituteTeacher && 
+                    record.substituteTeacher.toLowerCase().includes(currentTeacherName.toLowerCase())
+                );
+            }
+            
+            if (filteredRecords.length === 0) {
+                const message = currentUser && currentUser.type === 'substitute' 
+                    ? `ไม่มีงานสอนแทนที่มอบหมายให้ "${currentUser.name}"`
+                    : 'ไม่มีรายการที่ต้องบันทึกผลการสอน';
+                container.innerHTML = `<p class="text-gray-600">${message}</p>`;
                 return;
             }
             
             let html = '';
-            approvedRecords.forEach(record => {
+            filteredRecords.forEach(record => {
                 html += `
                     <div class="record-card status-approved mb-4">
                         <h4 class="font-semibold text-gray-800 mb-2">วิชา: ${record.subject}</h4>
@@ -1393,10 +1422,17 @@
             // User type change handler
             document.getElementById('userType').addEventListener('change', function() {
                 const passwordField = document.getElementById('passwordField');
+                const teacherNameField = document.getElementById('teacherNameField');
+                
                 if (this.value === 'head' || this.value === 'admin') {
                     passwordField.classList.remove('hidden');
+                    teacherNameField.classList.add('hidden');
+                } else if (this.value === 'substitute') {
+                    passwordField.classList.add('hidden');
+                    teacherNameField.classList.remove('hidden');
                 } else {
                     passwordField.classList.add('hidden');
+                    teacherNameField.classList.add('hidden');
                 }
             });
 
