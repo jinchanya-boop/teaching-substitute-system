@@ -43,6 +43,17 @@
         .status-pending { border-left: 4px solid #f59e0b; }
         .status-approved { border-left: 4px solid #10b981; }
         .status-rejected { border-left: 4px solid #ef4444; }
+        
+        /* PDF Styles */
+        @media print {
+            body { font-size: 12px; line-height: 1.4; margin: 10px; }
+            .pdf-content { max-width: 100%; }
+            .pdf-header { text-align: center; margin-bottom: 15px; border-bottom: 2px solid #333; padding-bottom: 10px; }
+            .pdf-section { margin-bottom: 15px; padding: 10px; border: 1px solid #ccc; page-break-inside: avoid; }
+            .pdf-footer { margin-top: 20px; text-align: center; font-size: 10px; color: #666; border-top: 1px solid #ccc; padding-top: 10px; }
+            .pdf-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+            .pdf-full-width { grid-column: 1 / -1; }
+        }
     </style>
 </head>
 <body class="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen">
@@ -310,8 +321,8 @@
             folderId: '1pfSdQHTZwY4VpPtpB7jyLQr4UNFdReEz'
         };
 
-        // ฟังก์ชันส่งข้อมูลไป Google Sheet
-        function sendToGoogleSheet(data, action = 'addRecord') {
+        // ฟังก์ชันส่งข้อมูลไป Google Sheet - แก้ไขแล้ว
+        function sendToGoogleSheet(data, action = 'addRecord', additionalData = {}) {
             if (!appConfig.scriptUrl) {
                 console.log('ไม่มี Google Apps Script URL');
                 return Promise.resolve();
@@ -322,8 +333,11 @@
                 data: data,
                 sheetId: appConfig.sheetId,
                 folderId: appConfig.folderId,
-                timestamp: new Date().toISOString()
+                timestamp: new Date().toISOString(),
+                ...additionalData
             };
+
+            console.log('กำลังส่งข้อมูลไป Google Sheet:', payload);
 
             return fetch(appConfig.scriptUrl, {
                 method: 'POST',
@@ -335,9 +349,11 @@
             })
             .then(() => {
                 console.log('ส่งข้อมูลไป Google Sheet สำเร็จ');
+                return { success: true };
             })
             .catch(error => {
                 console.error('ส่งข้อมูลไป Google Sheet ล้มเหลว:', error);
+                return { success: false, error: error };
             });
         }
 
@@ -445,7 +461,7 @@
             showSection('dashboard');
         }
 
-        // Signature pad - แก้ไขการคำนวณตำแหน่ง
+        // Signature pad
         function initSignaturePad(canvasId) {
             const canvas = document.getElementById(canvasId);
             if (!canvas) return;
@@ -530,7 +546,7 @@
             showNotification('ทดสอบลายเซ็นเรียบร้อย', 'info');
         }
 
-        // Form submission - เพิ่มการส่งข้อมูลไป Google Sheet
+        // Form submission
         function submitTeacherForm(e) {
             e.preventDefault();
             
@@ -568,7 +584,6 @@
                 teacherSignature: canvas.toDataURL()
             };
 
-            // แสดงสถานะกำลังบันทึก
             const submitBtn = document.querySelector('#teacherForm button[type="submit"]');
             const originalText = submitBtn.textContent;
             submitBtn.disabled = true;
@@ -578,8 +593,12 @@
             records.push(formData);
             localStorage.setItem('teachingRecords', JSON.stringify(records));
             
-            // ส่งข้อมูลไป Google Sheet
-            sendToGoogleSheet(formData)
+            // ส่งข้อมูลไป Google Sheet พร้อมลายเซ็น
+            const signatures = {
+                teacher: canvas.toDataURL()
+            };
+            
+            sendToGoogleSheet(formData, 'addRecord', { signatures: signatures })
                 .then(() => {
                     showNotification('บันทึกข้อมูลสำเร็จ รอการอนุมัติจากหัวหน้าสาระ', 'success');
                     document.getElementById('teacherAssignmentForm').reset();
@@ -635,7 +654,6 @@
             
             container.innerHTML = html;
             
-            // Initialize signature pads
             setTimeout(() => {
                 pendingRecords.forEach(record => {
                     initSignaturePad('headSignature_' + record.id);
@@ -715,7 +733,6 @@
             
             container.innerHTML = html;
             
-            // Initialize signature pads
             setTimeout(() => {
                 readyRecords.forEach(record => {
                     initSignaturePad('adminSignature_' + record.id);
@@ -723,7 +740,7 @@
             }, 100);
         }
 
-        // Record actions - เพิ่มการส่งข้อมูลไป Google Sheet
+        // Record actions - แก้ไขการส่งข้อมูลไป Google Sheet
         function approveRecord(recordId) {
             const canvas = document.getElementById('headSignature_' + recordId);
             const ctx = canvas.getContext('2d');
@@ -750,11 +767,20 @@
                 record.status = 'head_approved';
                 record.headApprovedAt = new Date().toLocaleString('th-TH');
                 
-                // บันทึกใน localStorage
                 localStorage.setItem('teachingRecords', JSON.stringify(records));
                 
-                // ส่งข้อมูลอัพเดทไป Google Sheet
-                sendToGoogleSheet(record, 'updateRecord')
+                // ส่งข้อมูลอัพเดทไป Google Sheet พร้อมลายเซ็น
+                const updateData = {
+                    recordId: recordId,
+                    updateData: {
+                        headApproval: 'approved',
+                        headReason: 'อนุมัติโดยหัวหน้าสาระ',
+                        status: 'head_approved'
+                    },
+                    headSignature: canvas.toDataURL()
+                };
+                
+                sendToGoogleSheet(record, 'updateRecord', updateData)
                     .then(() => {
                         showNotification('อนุมัติรายการเรียบร้อย และบันทึกใน Google Sheet แล้ว', 'success');
                         loadHeadRecords();
@@ -777,11 +803,19 @@
                     record.status = 'rejected';
                     record.headRejectedAt = new Date().toLocaleString('th-TH');
                     
-                    // บันทึกใน localStorage
                     localStorage.setItem('teachingRecords', JSON.stringify(records));
                     
-                    // ส่งข้อมูลอัพเดทไป Google Sheet
-                    sendToGoogleSheet(record, 'updateRecord')
+                    // ส่งข้อมูลการไม่อนุมัติไป Google Sheet
+                    const updateData = {
+                        recordId: recordId,
+                        updateData: {
+                            headApproval: 'rejected',
+                            headReason: reason,
+                            status: 'rejected'
+                        }
+                    };
+                    
+                    sendToGoogleSheet(record, 'updateRecord', updateData)
                         .then(() => {
                             showNotification('ไม่อนุมัติรายการเรียบร้อย และบันทึกใน Google Sheet แล้ว', 'success');
                             loadHeadRecords();
@@ -814,8 +848,26 @@
                 };
                 record.status = 'substitute_reported';
                 localStorage.setItem('teachingRecords', JSON.stringify(records));
-                showNotification('บันทึกผลการสอนเรียบร้อย', 'success');
-                loadSubstituteRecords();
+                
+                // ส่งข้อมูลรายงานไป Google Sheet
+                const updateData = {
+                    recordId: recordId,
+                    updateData: {
+                        substituteReport: record.substituteReport,
+                        status: 'substitute_reported'
+                    }
+                };
+                
+                sendToGoogleSheet(record, 'updateRecord', updateData)
+                    .then(() => {
+                        showNotification('บันทึกผลการสอนเรียบร้อย และส่งไป Google Sheet แล้ว', 'success');
+                        loadSubstituteRecords();
+                    })
+                    .catch(error => {
+                        console.error('ส่งรายงานไป Google Sheet ล้มเหลว:', error);
+                        showNotification('บันทึกผลการสอนเรียบร้อย แต่อาจมีปัญหาในการส่งไป Google Sheet', 'info');
+                        loadSubstituteRecords();
+                    });
             }
         }
 
@@ -853,11 +905,20 @@
                 record.status = 'completed';
                 record.finalApprovalDate = new Date().toLocaleString('th-TH');
                 
-                // บันทึกใน localStorage
                 localStorage.setItem('teachingRecords', JSON.stringify(records));
                 
-                // ส่งข้อมูลอัพเดทไป Google Sheet
-                sendToGoogleSheet(record, 'updateRecord')
+                // ส่งข้อมูลการอนุมัติขั้นสุดท้ายไป Google Sheet
+                const updateData = {
+                    recordId: recordId,
+                    updateData: {
+                        adminApproval: 'approved',
+                        adminReason: reason,
+                        status: 'completed'
+                    },
+                    adminSignature: canvas.toDataURL()
+                };
+                
+                sendToGoogleSheet(record, 'updateRecord', updateData)
                     .then(() => {
                         showNotification('อนุมัติขั้นสุดท้ายเรียบร้อย และบันทึกใน Google Sheet แล้ว', 'success');
                         loadAdminRecords();
@@ -904,11 +965,20 @@
                 record.status = 'rejected';
                 record.finalRejectionDate = new Date().toLocaleString('th-TH');
                 
-                // บันทึกใน localStorage
                 localStorage.setItem('teachingRecords', JSON.stringify(records));
                 
-                // ส่งข้อมูลอัพเดทไป Google Sheet
-                sendToGoogleSheet(record, 'updateRecord')
+                // ส่งข้อมูลการไม่อนุมัติขั้นสุดท้ายไป Google Sheet
+                const updateData = {
+                    recordId: recordId,
+                    updateData: {
+                        adminApproval: 'rejected',
+                        adminReason: reason,
+                        status: 'rejected'
+                    },
+                    adminSignature: canvas.toDataURL()
+                };
+                
+                sendToGoogleSheet(record, 'updateRecord', updateData)
                     .then(() => {
                         showNotification('บันทึกการไม่อนุมัติเรียบร้อย และบันทึกใน Google Sheet แล้ว', 'success');
                         loadAdminRecords();
@@ -986,6 +1056,7 @@
             loadDashboardData();
         }
 
+        // แก้ไขฟังก์ชัน generatePDF ให้อยู่ในหน้าเดียว
         function generatePDF(recordId) {
             const record = records.find(r => r.id === recordId);
             if (!record) {
@@ -1001,77 +1072,155 @@
     <meta charset="UTF-8">
     <title>เอกสารบันทึกการสอนแทน - ${record.subject}</title>
     <style>
-        body { font-family: Arial, sans-serif; margin: 20px; line-height: 1.6; }
-        .header { text-align: center; border-bottom: 2px solid #333; padding-bottom: 20px; margin-bottom: 30px; }
-        .section { margin-bottom: 25px; border: 1px solid #ccc; padding: 20px; }
-        .footer { margin-top: 40px; text-align: center; font-size: 12px; color: #666; border-top: 1px solid #ccc; padding-top: 20px; }
+        @page { size: A4; margin: 15mm; }
+        body { 
+            font-family: 'Sarabun', Arial, sans-serif; 
+            font-size: 11px; 
+            line-height: 1.3; 
+            margin: 0; 
+            padding: 0;
+            color: #333;
+        }
+        .pdf-content { 
+            max-width: 100%; 
+            height: auto;
+        }
+        .pdf-header { 
+            text-align: center; 
+            margin-bottom: 10px; 
+            border-bottom: 2px solid #333; 
+            padding-bottom: 8px; 
+        }
+        .pdf-header h1 { 
+            font-size: 16px; 
+            margin: 0 0 5px 0; 
+            font-weight: bold; 
+        }
+        .pdf-header h2 { 
+            font-size: 14px;
+            margin: 0 0 3px 0; 
+            font-weight: normal; 
+        }
+        .pdf-header p { 
+            font-size: 10px; 
+            margin: 2px 0; 
+        }
+        .pdf-section { 
+            margin-bottom: 8px; 
+            padding: 6px; 
+            border: 1px solid #ccc; 
+            page-break-inside: avoid;
+            font-size: 10px;
+        }
+        .pdf-section h3 { 
+            font-size: 12px; 
+            margin: 0 0 5px 0; 
+            font-weight: bold; 
+            color: #2563eb;
+        }
+        .pdf-grid { 
+            display: grid; 
+            grid-template-columns: 1fr 1fr; 
+            gap: 8px; 
+            margin-bottom: 6px;
+        }
+        .pdf-full-width { 
+            grid-column: 1 / -1; 
+        }
+        .pdf-item { 
+            margin-bottom: 3px; 
+        }
+        .pdf-label { 
+            font-weight: bold; 
+            display: inline; 
+        }
+        .pdf-footer { 
+            margin-top: 10px; 
+            text-align: center; 
+            font-size: 9px; 
+            color: #666; 
+            border-top: 1px solid #ccc; 
+            padding-top: 6px; 
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 9px;
+            font-weight: bold;
+            color: white;
+        }
+        .status-completed { background-color: #10b981; }
+        .status-pending { background-color: #f59e0b; }
+        .status-rejected { background-color: #ef4444; }
+        @media print {
+            body { -webkit-print-color-adjust: exact; }
+            .pdf-content { transform: scale(0.95); transform-origin: top left; }
+        }
     </style>
 </head>
 <body>
-    <div class="header">
-        <h1>โรงเรียนสา</h1>
-        <h2>เอกสารบันทึกการสอนแทน</h2>
-        <p>เลขที่เอกสาร: ${record.id}</p>
-    </div>
+    <div class="pdf-content">
+        <div class="pdf-header">
+            <h1>โรงเรียนสา</h1>
+            <h2>เอกสารบันทึกการสอนแทน</h2>
+            <p>เลขที่เอกสาร: ${record.id} | วันที่ออกเอกสาร: ${currentDate}</p>
+            <p>สถานะ: <span class="status-badge ${record.status === 'completed' ? 'status-completed' : record.status === 'rejected' ? 'status-rejected' : 'status-pending'}">${record.status === 'completed' ? 'อนุมัติครบทุกขั้นตอน' : record.status === 'rejected' ? 'ไม่อนุมัติ' : 'อยู่ระหว่างดำเนินการ'}</span></p>
+        </div>
 
-    <div class="section">
-        <h3>ข้อมูลการมอบหมายงาน</h3>
-        <p><strong>วันที่สอนแทน:</strong> ${record.date}</p>
-        <p><strong>เวลา:</strong> ${record.time}</p>
-        <p><strong>ชั้น/ห้อง:</strong> ${record.classRoom}</p>
-        <p><strong>วิชา:</strong> ${record.subject}</p>
-        <p><strong>ครูประจำวิชา:</strong> ${record.regularTeacher}</p>
-        <p><strong>ครูสอนแทน:</strong> ${record.substituteTeacher}</p>
-        <p><strong>เนื้อหาที่สอน:</strong> ${record.content}</p>
-        <p><strong>กิจกรรมการเรียนการสอน:</strong> ${record.activities || 'ไม่ระบุ'}</p>
-        <p><strong>การบ้าน:</strong> ${record.homework || 'ไม่มี'}</p>
-    </div>
+        <div class="pdf-section">
+            <h3>ข้อมูลการมอบหมายงาน</h3>
+            <div class="pdf-grid">
+                <div class="pdf-item"><span class="pdf-label">วันที่สอนแทน:</span> ${record.date}</div>
+                <div class="pdf-item"><span class="pdf-label">เวลา:</span> ${record.time}</div>
+                <div class="pdf-item"><span class="pdf-label">ชั้น/ห้อง:</span> ${record.classRoom}</div>
+                <div class="pdf-item"><span class="pdf-label">วิชา:</span> ${record.subject}</div>
+                <div class="pdf-item"><span class="pdf-label">ครูประจำวิชา:</span> ${record.regularTeacher}</div>
+                <div class="pdf-item"><span class="pdf-label">ครูสอนแทน:</span> ${record.substituteTeacher}</div>
+            </div>
+            <div class="pdf-full-width">
+                <div class="pdf-item"><span class="pdf-label">เนื้อหาที่สอน:</span> ${record.content}</div>
+                <div class="pdf-item"><span class="pdf-label">กิจกรรมการเรียนการสอน:</span> ${record.activities || 'ไม่ระบุ'}</div>
+                <div class="pdf-item"><span class="pdf-label">การบ้าน:</span> ${record.homework || 'ไม่มี'}</div>
+            </div>
+        </div>
 
-    ${record.substituteReport ? `
-    <div class="section">
-        <h3>รายงานผลการสอนจากครูสอนแทน</h3>
-        <p><strong>จำนวนนักเรียนที่เข้าเรียน:</strong> ${record.substituteReport.attendance}</p>
-        <p><strong>พฤติกรรมของนักเรียน:</strong> ${record.substituteReport.behavior}</p>
-        <p><strong>ข้อสังเกตเพิ่มเติม:</strong> ${record.substituteReport.observations || 'ไม่มี'}</p>
-    </div>
-    ` : ''}
+        ${record.substituteReport ? `
+        <div class="pdf-section">
+            <h3>รายงานผลการสอนจากครูสอนแทน</h3>
+            <div class="pdf-grid">
+                <div class="pdf-item"><span class="pdf-label">จำนวนนักเรียนที่เข้าเรียน:</span> ${record.substituteReport.attendance}</div>
+                <div class="pdf-item"><span class="pdf-label">วันที่ส่งรายงาน:</span> ${record.substituteReport.submittedAt}</div>
+            </div>
+            <div class="pdf-full-width">
+                <div class="pdf-item"><span class="pdf-label">พฤติกรรมของนักเรียน:</span> ${record.substituteReport.behavior}</div>
+                ${record.substituteReport.observations ? `<div class="pdf-item"><span class="pdf-label">ข้อสังเกตเพิ่มเติม:</span> ${record.substituteReport.observations}</div>` : ''}
+            </div>
+        </div>
+        ` : ''}
 
-    <div class="footer">
-        <p>เอกสารนี้ออกโดยระบบบันทึกการสอนแทน - โรงเรียนสา</p>
-        <p>สถานะ: ${record.status === 'completed' ? 'อนุมัติครบทุกขั้นตอนแล้ว' : 'อยู่ระหว่างดำเนินการ'} | วันที่สร้างเอกสาร: ${currentDate}</p>
+        ${(record.headApproval || record.adminApproval) ? `
+        <div class="pdf-section">
+            <h3>สถานะการอนุมัติ</h3>
+            <div class="pdf-grid">
+                ${record.headApproval ? `
+                <div class="pdf-item"><span class="pdf-label">หัวหน้าสาระ:</span> ${record.headApproval === 'approved' ? '✓ อนุมัติ' : '✗ ไม่อนุมัติ'}</div>
+                <div class="pdf-item"><span class="pdf-label">วันที่พิจารณา:</span> ${record.headApprovedAt || record.headRejectedAt || '-'}</div>
+                ` : ''}
+                ${record.adminApproval ? `
+                <div class="pdf-item"><span class="pdf-label">รองกลุ่มบริหาร:</span> ${record.adminApproval === 'approved' ? '✓ อนุมัติ' : '✗ ไม่อนุมัติ'}</div>
+                <div class="pdf-item"><span class="pdf-label">วันที่อนุมัติสุดท้าย:</span> ${record.finalApprovalDate || record.finalRejectionDate || '-'}</div>
+                ` : ''}
+            </div>
+            ${record.headReason ? `<div class="pdf-item"><span class="pdf-label">เหตุผลหัวหน้าสาระ:</span> ${record.headReason}</div>` : ''}
+            ${record.adminReason ? `<div class="pdf-item"><span class="pdf-label">เหตุผลรองกลุ่มบริหาร:</span> ${record.adminReason}</div>` : ''}
+        </div>
+        ` : ''}
+
+        <div class="pdf-footer">
+            <p>เอกสารนี้ออกโดยระบบบันทึกการสอนแทน - โรงเรียนสา</p>
+            <p>ระบบงานเทคโนโลยี | วันที่สร้างเอกสาร: ${currentDate}</p>
+        </div>
     </div>
 </body>
-</html>`;
-            
-            const printWindow = window.open('', '_blank');
-            if (printWindow) {
-                printWindow.document.write(html);
-                printWindow.document.close();
-                printWindow.onload = function() {
-                    printWindow.print();
-                };
-            }
-        }
-
-        // Event listeners
-        document.addEventListener('DOMContentLoaded', function() {
-            // User type change handler
-            document.getElementById('userType').addEventListener('change', function() {
-                const passwordField = document.getElementById('passwordField');
-                if (this.value === 'head' || this.value === 'admin') {
-                    passwordField.classList.remove('hidden');
-                } else {
-                    passwordField.classList.add('hidden');
-                }
-            });
-
-            // Form submit handler
-            document.getElementById('teacherAssignmentForm').addEventListener('submit', submitTeacherForm);
-
-            // Initialize
-            showSection('menuSection');
-            console.log('ระบบเริ่มต้นเรียบร้อย โหลดข้อมูล:', records.length, 'รายการ');
-        });
-    </script>
-</body>
-</html>
+</html>`
