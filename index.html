@@ -834,23 +834,333 @@
             if (typeof loadDashboardData === 'function') loadDashboardData();
         };
 
-        // Load functions (simplified)
+        // Load functions with real functionality
         window.loadHeadRecords = function() {
             const container = document.getElementById('headRecordsList');
             if (!container) return;
-            container.innerHTML = '<p class="text-gray-600">ไม่มีรายการที่รออนุมัติ ระบบจะแสดงข้อมูลเมื่อมีการส่งเอกสาร</p>';
+            
+            // โหลดข้อมูลจาก localStorage
+            const savedRecords = JSON.parse(localStorage.getItem('teachingRecords') || '[]');
+            records = savedRecords; // อัพเดท global records
+            
+            console.log('Loading head records, total records:', records.length);
+            
+            // หารายการที่รออนุมัติจากหัวหน้าสาระ
+            const pendingRecords = records.filter(record => {
+                const needsHeadApproval = !record.headApproval || record.headApproval === 'pending' || record.headApproval === '';
+                const notRejected = record.status !== 'rejected';
+                console.log('Record', record.id, 'headApproval:', record.headApproval, 'status:', record.status, 'needs approval:', needsHeadApproval && notRejected);
+                return needsHeadApproval && notRejected;
+            });
+            
+            console.log('Pending records for head approval:', pendingRecords.length);
+            
+            if (pendingRecords.length === 0) {
+                let html = '<div class="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded">';
+                html += '<h4 class="font-semibold text-yellow-800">ไม่มีรายการที่รออนุมัติ</h4>';
+                html += '<p class="text-sm text-yellow-700">รายการทั้งหมด: ' + records.length + ' รายการ</p>';
+                
+                if (records.length > 0) {
+                    html += '<button onclick="showAllForHead()" class="mt-2 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">ดูรายการทั้งหมด</button>';
+                }
+                html += '</div>';
+                container.innerHTML = html;
+                return;
+            }
+            
+            let html = '';
+            for (let i = 0; i < pendingRecords.length; i++) {
+                const record = pendingRecords[i];
+                html += '<div class="record-card status-pending mb-6 border border-yellow-300 bg-yellow-50">';
+                html += '<h4 class="font-semibold text-gray-800 mb-2">วิชา: ' + (record.subject || 'ไม่ระบุ') + '</h4>';
+                html += '<div class="grid grid-cols-2 gap-4 text-sm mb-3">';
+                html += '<p><strong>ชั้น/ห้อง:</strong> ' + (record.classRoom || 'ไม่ระบุ') + '</p>';
+                html += '<p><strong>วันที่:</strong> ' + (record.date || 'ไม่ระบุ') + '</p>';
+                html += '<p><strong>เวลา:</strong> ' + (record.time || 'ไม่ระบุ') + '</p>';
+                html += '<p><strong>สถานะ:</strong> รออนุมัติ</p>';
+                html += '</div>';
+                html += '<p class="mb-2"><strong>ครูประจำ:</strong> ' + (record.regularTeacher || 'ไม่ระบุ') + '</p>';
+                html += '<p class="mb-2"><strong>ครูสอนแทน:</strong> ' + (record.substituteTeacher || 'ไม่ระบุ') + '</p>';
+                html += '<p class="mb-3"><strong>เนื้อหา:</strong> ' + (record.content || 'ไม่ระบุ') + '</p>';
+                
+                html += '<div class="mt-4 border-t pt-4">';
+                html += '<h5 class="font-medium text-gray-700 mb-2">การอนุมัติ</h5>';
+                html += '<div class="flex space-x-2">';
+                html += '<button onclick="quickApproveRecord(\'' + record.id + '\')" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">✓ อนุมัติ</button>';
+                html += '<button onclick="quickRejectRecord(\'' + record.id + '\')" class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700">✗ ไม่อนุมัติ</button>';
+                html += '</div>';
+                html += '</div>';
+                html += '</div>';
+            }
+            container.innerHTML = html;
+        };
+
+        window.showAllForHead = function() {
+            const container = document.getElementById('headRecordsList');
+            if (!container) return;
+            
+            let html = '<div class="mb-4">';
+            html += '<h4 class="font-semibold text-gray-800 mb-3">รายการทั้งหมด</h4>';
+            
+            for (let i = 0; i < records.length; i++) {
+                const record = records[i];
+                let statusColor = 'bg-gray-100';
+                let statusText = 'รออนุมัติ';
+                
+                if (record.headApproval === 'approved') {
+                    statusColor = 'bg-green-100';
+                    statusText = 'อนุมัติแล้ว';
+                } else if (record.headApproval === 'rejected') {
+                    statusColor = 'bg-red-100';
+                    statusText = 'ไม่อนุมัติ';
+                }
+                
+                html += '<div class="p-3 mb-2 border rounded ' + statusColor + '">';
+                html += '<div class="flex justify-between items-center">';
+                html += '<div>';
+                html += '<strong>' + (record.subject || 'ไม่ระบุ') + '</strong> - ' + (record.classRoom || 'ไม่ระบุ');
+                html += '<br><small class="text-gray-600">ครูประจำ: ' + (record.regularTeacher || 'ไม่ระบุ') + '</small>';
+                html += '<br><small class="text-gray-500">วันที่สร้าง: ' + (record.createdAt || 'ไม่ระบุ') + '</small>';
+                html += '</div>';
+                html += '<div class="text-right">';
+                html += '<div class="text-sm font-medium">' + statusText + '</div>';
+                if (!record.headApproval || record.headApproval === '' || record.headApproval === 'pending') {
+                    html += '<button onclick="quickApproveRecord(\'' + record.id + '\')" ';
+                    html += 'class="mt-1 bg-green-600 text-white px-3 py-1 rounded text-sm hover:bg-green-700">อนุมัติด่วน</button>';
+                }
+                html += '</div>';
+                html += '</div>';
+                html += '</div>';
+            }
+            
+            html += '<button onclick="loadHeadRecords()" class="mt-4 bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700">กลับ</button>';
+            html += '</div>';
+            
+            container.innerHTML = html;
+        };
+
+        window.quickApproveRecord = function(recordId) {
+            if (!confirm('ยืนยันการอนุมัติรายการนี้?')) {
+                return;
+            }
+            
+            for (let i = 0; i < records.length; i++) {
+                if (records[i].id === recordId) {
+                    records[i].headApproval = 'approved';
+                    records[i].headReason = 'อนุมัติโดยหัวหน้าสาระ';
+                    records[i].status = 'head_approved';
+                    records[i].headApprovedAt = new Date().toLocaleString('th-TH');
+                    break;
+                }
+            }
+            
+            localStorage.setItem('teachingRecords', JSON.stringify(records));
+            showNotification('อนุมัติรายการเรียบร้อยแล้ว', 'success');
+            
+            // รีเฟรชการแสดงผล
+            setTimeout(() => {
+                loadHeadRecords();
+            }, 500);
+        };
+
+        window.quickRejectRecord = function(recordId) {
+            const reason = prompt('กรุณาระบุเหตุผลที่ไม่อนุมัติ:');
+            if (!reason || reason.trim() === '') {
+                showNotification('กรุณาระบุเหตุผล', 'error');
+                return;
+            }
+            
+            for (let i = 0; i < records.length; i++) {
+                if (records[i].id === recordId) {
+                    records[i].headApproval = 'rejected';
+                    records[i].headReason = reason.trim();
+                    records[i].status = 'rejected';
+                    records[i].headRejectedAt = new Date().toLocaleString('th-TH');
+                    break;
+                }
+            }
+            
+            localStorage.setItem('teachingRecords', JSON.stringify(records));
+            showNotification('บันทึกการไม่อนุมัติเรียบร้อยแล้ว', 'success');
+            
+            // รีเฟรชการแสดงผล
+            setTimeout(() => {
+                loadHeadRecords();
+            }, 500);
         };
 
         window.loadSubstituteRecords = function() {
             const container = document.getElementById('substituteRecordsList');
             if (!container) return;
-            container.innerHTML = '<p class="text-gray-600">ไม่มีรายการที่ต้องบันทึก ระบบจะแสดงเมื่อมีการอนุมัติจากหัวหน้าสาระ</p>';
+            
+            const savedRecords = JSON.parse(localStorage.getItem('teachingRecords') || '[]');
+            records = savedRecords;
+            
+            const approvedRecords = records.filter(record => {
+                return record.headApproval === 'approved' && !record.substituteReport;
+            });
+            
+            if (approvedRecords.length === 0) {
+                container.innerHTML = '<p class="text-gray-600">ไม่มีรายการที่ต้องบันทึกผลการสอน</p>';
+                return;
+            }
+            
+            let html = '';
+            for (let i = 0; i < approvedRecords.length; i++) {
+                const record = approvedRecords[i];
+                html += '<div class="record-card status-approved mb-4 border border-green-300 bg-green-50">';
+                html += '<h4 class="font-semibold text-gray-800 mb-2">วิชา: ' + (record.subject || 'ไม่ระบุ') + '</h4>';
+                html += '<div class="grid grid-cols-2 gap-4 text-sm mb-3">';
+                html += '<p><strong>ชั้น/ห้อง:</strong> ' + (record.classRoom || 'ไม่ระบุ') + '</p>';
+                html += '<p><strong>วันที่:</strong> ' + (record.date || 'ไม่ระบุ') + '</p>';
+                html += '<p><strong>เวลา:</strong> ' + (record.time || 'ไม่ระบุ') + '</p>';
+                html += '<p><strong>สถานะ:</strong> อนุมัติแล้ว</p>';
+                html += '</div>';
+                html += '<p class="mb-2"><strong>ครูประจำ:</strong> ' + (record.regularTeacher || 'ไม่ระบุ') + '</p>';
+                html += '<p class="mb-2"><strong>ครูสอนแทน:</strong> ' + (record.substituteTeacher || 'ไม่ระบุ') + '</p>';
+                html += '<p class="mb-3"><strong>เนื้อหา:</strong> ' + (record.content || 'ไม่ระบุ') + '</p>';
+                
+                html += '<div class="mt-4 border-t pt-4">';
+                html += '<button onclick="showSubstituteReportForm(\'' + record.id + '\')" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">📝 บันทึกผลการสอน</button>';
+                html += '</div>';
+                html += '</div>';
+            }
+            container.innerHTML = html;
+        };
+
+        window.showSubstituteReportForm = function(recordId) {
+            const attendance = prompt('จำนวนนักเรียนที่เข้าเรียน (เช่น 30 คน จากทั้งหมด 35 คน):');
+            if (!attendance) return;
+            
+            const behavior = prompt('พฤติกรรมของนักเรียน:');
+            if (!behavior) return;
+            
+            const observations = prompt('ข้อสังเกตเพิ่มเติม (ถ้ามี):') || '';
+            
+            for (let i = 0; i < records.length; i++) {
+                if (records[i].id === recordId) {
+                    records[i].substituteReport = {
+                        attendance: attendance.trim(),
+                        behavior: behavior.trim(),
+                        observations: observations.trim(),
+                        submittedAt: new Date().toLocaleString('th-TH')
+                    };
+                    records[i].status = 'substitute_reported';
+                    break;
+                }
+            }
+            
+            localStorage.setItem('teachingRecords', JSON.stringify(records));
+            showNotification('บันทึกผลการสอนเรียบร้อยแล้ว', 'success');
+            
+            setTimeout(() => {
+                loadSubstituteRecords();
+            }, 500);
         };
 
         window.loadAdminRecords = function() {
             const container = document.getElementById('adminRecordsList');
             if (!container) return;
-            container.innerHTML = '<p class="text-gray-600">ไม่มีรายการที่รอการอนุมัติ ระบบจะแสดงเมื่อครูสอนแทนส่งรายงานแล้ว</p>';
+            
+            const savedRecords = JSON.parse(localStorage.getItem('teachingRecords') || '[]');
+            records = savedRecords;
+            
+            const readyRecords = records.filter(record => {
+                return record.headApproval === 'approved' && 
+                       record.substituteReport && 
+                       (!record.adminApproval || record.adminApproval === 'pending');
+            });
+            
+            if (readyRecords.length === 0) {
+                container.innerHTML = '<p class="text-gray-600">ไม่มีรายการที่รอการอนุมัติขั้นสุดท้าย</p>';
+                return;
+            }
+            
+            let html = '';
+            for (let i = 0; i < readyRecords.length; i++) {
+                const record = readyRecords[i];
+                html += '<div class="record-card status-pending mb-6 border border-purple-300 bg-purple-50">';
+                html += '<h4 class="font-semibold text-gray-800 mb-2">วิชา: ' + (record.subject || 'ไม่ระบุ') + '</h4>';
+                html += '<div class="grid grid-cols-2 gap-4 text-sm mb-3">';
+                html += '<p><strong>ชั้น/ห้อง:</strong> ' + (record.classRoom || 'ไม่ระบุ') + '</p>';
+                html += '<p><strong>วันที่:</strong> ' + (record.date || 'ไม่ระบุ') + '</p>';
+                html += '<p><strong>เวลา:</strong> ' + (record.time || 'ไม่ระบุ') + '</p>';
+                html += '<p><strong>สถานะ:</strong> รอการอนุมัติขั้นสุดท้าย</p>';
+                html += '</div>';
+                html += '<p class="mb-2"><strong>ครูประจำ:</strong> ' + (record.regularTeacher || 'ไม่ระบุ') + '</p>';
+                html += '<p class="mb-2"><strong>ครูสอนแทน:</strong> ' + (record.substituteTeacher || 'ไม่ระบุ') + '</p>';
+                html += '<p class="mb-3"><strong>เนื้อหา:</strong> ' + (record.content || 'ไม่ระบุ') + '</p>';
+                
+                if (record.substituteReport) {
+                    html += '<div class="mt-3 p-3 bg-blue-50 rounded border">';
+                    html += '<h6 class="font-medium text-blue-800 mb-2">รายงานจากครูสอนแทน</h6>';
+                    html += '<p class="text-sm"><strong>จำนวนนักเรียน:</strong> ' + record.substituteReport.attendance + '</p>';
+                    html += '<p class="text-sm"><strong>พฤติกรรม:</strong> ' + record.substituteReport.behavior + '</p>';
+                    if (record.substituteReport.observations) {
+                        html += '<p class="text-sm"><strong>ข้อสังเกต:</strong> ' + record.substituteReport.observations + '</p>';
+                    }
+                    html += '</div>';
+                }
+                
+                html += '<div class="mt-4 border-t pt-4">';
+                html += '<div class="flex space-x-2">';
+                html += '<button onclick="finalApprove(\'' + record.id + '\')" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">✓ อนุมัติขั้นสุดท้าย</button>';
+                html += '<button onclick="finalReject(\'' + record.id + '\')" class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700">✗ ไม่อนุมัติ</button>';
+                html += '</div>';
+                html += '</div>';
+                html += '</div>';
+            }
+            container.innerHTML = html;
+        };
+
+        window.finalApprove = function(recordId) {
+            const reason = prompt('เหตุผลในการอนุมัติ (จะบันทึกไว้ในเอกสาร):');
+            if (!reason || reason.trim() === '') {
+                showNotification('กรุณาระบุเหตุผลในการอนุมัติ', 'error');
+                return;
+            }
+            
+            for (let i = 0; i < records.length; i++) {
+                if (records[i].id === recordId) {
+                    records[i].adminApproval = 'approved';
+                    records[i].adminReason = reason.trim();
+                    records[i].status = 'completed';
+                    records[i].finalApprovalDate = new Date().toLocaleString('th-TH');
+                    break;
+                }
+            }
+            
+            localStorage.setItem('teachingRecords', JSON.stringify(records));
+            showNotification('อนุมัติขั้นสุดท้ายเรียบร้อยแล้ว', 'success');
+            
+            setTimeout(() => {
+                loadAdminRecords();
+            }, 500);
+        };
+
+        window.finalReject = function(recordId) {
+            const reason = prompt('เหตุผลที่ไม่อนุมัติ:');
+            if (!reason || reason.trim() === '') {
+                showNotification('กรุณาระบุเหตุผล', 'error');
+                return;
+            }
+            
+            for (let i = 0; i < records.length; i++) {
+                if (records[i].id === recordId) {
+                    records[i].adminApproval = 'rejected';
+                    records[i].adminReason = reason.trim();
+                    records[i].status = 'rejected';
+                    records[i].finalRejectionDate = new Date().toLocaleString('th-TH');
+                    break;
+                }
+            }
+            
+            localStorage.setItem('teachingRecords', JSON.stringify(records));
+            showNotification('บันทึกการไม่อนุมัติเรียบร้อยแล้ว', 'success');
+            
+            setTimeout(() => {
+                loadAdminRecords();
+            }, 500);
         };
 
         window.loadDashboardData = function() {
