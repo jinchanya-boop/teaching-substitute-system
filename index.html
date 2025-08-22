@@ -9,7 +9,7 @@
     <!-- Firebase SDKs -->
     <script type="module">
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
-        import { getFirestore, collection, addDoc, getDocs, updateDoc, doc, query, orderBy, onSnapshot } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+        import { getFirestore, collection, addDoc, getDocs, updateDoc, doc, query, orderBy, onSnapshot, deleteDoc } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
         import { getStorage, ref, uploadString, getDownloadURL } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js';
 
         // Firebase configuration - ต้องแทนที่ด้วยค่าจริงจาก Firebase Console
@@ -36,6 +36,7 @@
             addDoc,
             getDocs,
             updateDoc,
+            deleteDoc,
             doc,
             query,
             orderBy,
@@ -1464,4 +1465,3 @@
     </script>
 </body>
 </html>
-
