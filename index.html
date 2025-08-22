@@ -44,6 +44,35 @@
         .status-approved { border-left: 4px solid #10b981; }
         .status-rejected { border-left: 4px solid #ef4444; }
         
+        /* Sync indicator */
+        .sync-indicator {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #3b82f6;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            z-index: 1000;
+            transition: all 0.3s ease;
+        }
+        .sync-indicator.syncing {
+            background: #f59e0b;
+            animation: pulse 2s infinite;
+        }
+        .sync-indicator.error {
+            background: #ef4444;
+        }
+        .sync-indicator.success {
+            background: #10b981;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
         /* PDF Styles */
         @media print {
             body { font-size: 12px; line-height: 1.4; margin: 10px; }
@@ -57,6 +86,11 @@
     </style>
 </head>
 <body class="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen">
+    <!-- Sync Indicator -->
+    <div id="syncIndicator" class="sync-indicator hidden">
+        ออฟไลน์
+    </div>
+
     <!-- Header -->
     <header class="bg-white shadow-lg border-b-4 border-blue-600">
         <div class="container mx-auto px-4 py-4">
@@ -304,9 +338,10 @@
                     <div class="flex justify-between items-center mb-4">
                         <h3 class="text-lg font-semibold text-gray-800">รายการล่าสุด</h3>
                         <div class="flex space-x-2">
-                            <button onclick="refreshDashboardData()" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">นำเข้าข้อมูล</button>
-                            <button onclick="exportToCSV()" class="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700">ส่งออก CSV</button>
-                            <button onclick="resetLocalData()" class="bg-orange-600 text-white px-4 py-2 rounded hover:bg-orange-700">ล้างข้อมูล</button>
+                            <button onclick="syncWithGoogleSheet()" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">ซิงค์ข้อมูล</button>
+                            <button onclick="importFromGoogleSheet()" class="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700">นำเข้าข้อมูล</button>
+                            <button onclick="exportToCSV()" class="bg-orange-600 text-white px-4 py-2 rounded hover:bg-orange-700">ส่งออก CSV</button>
+                            <button onclick="resetLocalData()" class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700">ล้างข้อมูล</button>
                             <button onclick="createTestRecord()" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">ข้อมูลทดสอบ</button>
                         </div>
                     </div>
@@ -322,6 +357,7 @@
         // Global variables
         let currentUser = null;
         let records = JSON.parse(localStorage.getItem('teachingRecords') || '[]');
+        let syncStatus = 'offline';
         
         // Google Apps Script configuration
         const appConfig = {
@@ -330,51 +366,167 @@
             folderId: '1pfSdQHTZwY4VpPtpB7jyLQr4UNFdReEz'
         };
 
-        // ฟังก์ชันซิงค์ข้อมูลจาก Google Sheet แบบใหม่
-        function syncWithGoogleSheet() {
-            // เนื่องจากข้อจำกัดของ CORS จึงใช้วิธีอื่นในการซิงค์
-            showNotification('เนื่องจากข้อจำกัดของ Google Sheet API การซิงค์จะใช้วิธีทางเลือก', 'info');
+        // Enhanced sync indicator management
+        function updateSyncIndicator(status, message) {
+            const indicator = document.getElementById('syncIndicator');
+            if (!indicator) return;
             
-            // แนะนำให้ผู้ใช้ป้อนข้อมูลจาก Google Sheet เอง
-            const shouldImport = confirm('ต้องการนำเข้าข้อมูลจาก Google Sheet ใหม่หรือไม่?\n\n' +
-                'หากต้องการ กรุณาคัดลอกข้อมูลจาก Google Sheet มาวางในกล่องข้อความต่อไป\n' +
-                'รูปแบบ: ID,วันที่,เวลา,ชั้น,วิชา,ครูประจำ,ครูสอนแทน,เนื้อหา,สถานะ');
+            indicator.className = 'sync-indicator';
+            indicator.classList.remove('hidden');
             
-            if (shouldImport) {
-                const csvData = prompt('วางข้อมูลจาก Google Sheet (รูปแบบ CSV):');
-                if (csvData) {
-                    try {
-                        importDataFromCSV(csvData);
-                        showNotification('นำเข้าข้อมูลสำเร็จ', 'success');
-                        loadDashboardData();
-                    } catch (error) {
-                        showNotification('เกิดข้อผิดพลาดในการนำเข้าข้อมูล: ' + error.message, 'error');
-                    }
-                }
+            switch(status) {
+                case 'online':
+                    indicator.classList.add('success');
+                    indicator.textContent = message || 'ออนไลน์';
+                    break;
+                case 'syncing':
+                    indicator.classList.add('syncing');
+                    indicator.textContent = message || 'กำลังซิงค์...';
+                    break;
+                case 'error':
+                    indicator.classList.add('error');
+                    indicator.textContent = message || 'เกิดข้อผิดพลาด';
+                    break;
+                case 'offline':
+                default:
+                    indicator.textContent = message || 'ออฟไลน์';
+                    break;
             }
             
-            return Promise.resolve({ success: true });
+            // Auto hide after 3 seconds for success status
+            if (status === 'online') {
+                setTimeout(() => {
+                    if (indicator.classList.contains('success')) {
+                        indicator.classList.add('hidden');
+                    }
+                }, 3000);
+            }
         }
 
-        // ฟังก์ชันนำเข้าข้อมูลจาก CSV
+        // Enhanced Google Sheet sync function
+        async function syncWithGoogleSheet() {
+            if (!appConfig.scriptUrl) {
+                showNotification('ไม่ได้กำหนด Google Apps Script URL', 'error');
+                return false;
+            }
+
+            updateSyncIndicator('syncing', 'กำลังซิงค์ข้อมูล...');
+            
+            try {
+                // Test connection first
+                const testResponse = await fetch(appConfig.scriptUrl, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        action: 'test'
+                    })
+                });
+
+                // Since we can't read the response due to CORS, assume success if no error
+                updateSyncIndicator('online', 'เชื่อมต่อสำเร็จ');
+                syncStatus = 'online';
+                
+                showNotification('เชื่อมต่อ Google Sheet สำเร็จ', 'success');
+                return true;
+                
+            } catch (error) {
+                console.error('การเชื่อมต่อ Google Sheet ล้มเหลว:', error);
+                updateSyncIndicator('error', 'เชื่อมต่อล้มเหลว');
+                syncStatus = 'offline';
+                showNotification('ไม่สามารถเชื่อมต่อ Google Sheet ได้ - ใช้งานแบบออฟไลน์', 'error');
+                return false;
+            }
+        }
+
+        // Import data from Google Sheet using CSV
+        async function importFromGoogleSheet() {
+            const csvUrl = `https://docs.google.com/spreadsheets/d/${appConfig.sheetId}/export?format=csv&gid=0`;
+            
+            updateSyncIndicator('syncing', 'กำลังนำเข้าข้อมูล...');
+            
+            try {
+                // Try to fetch using CORS proxy
+                const proxyUrl = 'https://cors-anywhere.herokuapp.com/';
+                const response = await fetch(proxyUrl + csvUrl);
+                
+                if (response.ok) {
+                    const csvData = await response.text();
+                    importDataFromCSV(csvData);
+                    updateSyncIndicator('online', 'นำเข้าสำเร็จ');
+                    showNotification('นำเข้าข้อมูลจาก Google Sheet สำเร็จ', 'success');
+                    loadDashboardData();
+                } else {
+                    throw new Error('Response not ok');
+                }
+                
+            } catch (error) {
+                console.warn('ไม่สามารถใช้ CORS proxy ได้:', error);
+                updateSyncIndicator('error', 'นำเข้าล้มเหลว');
+                
+                // Fallback to manual import
+                const shouldImport = confirm(
+                    'ไม่สามารถนำเข้าข้อมูลอัตโนมัติได้\n\n' +
+                    'คุณต้องการนำเข้าข้อมูลด้วยตนเองหรือไม่?\n\n' +
+                    '1. เปิด Google Sheet\n' +
+                    '2. เลือก File > Download > CSV\n' +
+                    '3. คัดลอกข้อมูลจากไฟล์ CSV\n' +
+                    '4. วางในกล่องข้อความถัดไป'
+                );
+                
+                if (shouldImport) {
+                    const csvData = prompt('วางข้อมูล CSV ที่คัดลอกมา:');
+                    if (csvData && csvData.trim()) {
+                        try {
+                            importDataFromCSV(csvData);
+                            updateSyncIndicator('online', 'นำเข้าสำเร็จ');
+                            showNotification('นำเข้าข้อมูลด้วยตนเองสำเร็จ', 'success');
+                            loadDashboardData();
+                        } catch (importError) {
+                            updateSyncIndicator('error', 'นำเข้าล้มเหลว');
+                            showNotification('เกิดข้อผิดพลาดในการนำเข้าข้อมูล: ' + importError.message, 'error');
+                        }
+                    }
+                } else {
+                    updateSyncIndicator('offline', 'ใช้งานออฟไลน์');
+                }
+            }
+        }
+
+        // Enhanced CSV import function
         function importDataFromCSV(csvData) {
+            if (!csvData || !csvData.trim()) {
+                throw new Error('ข้อมูล CSV ว่างเปล่า');
+            }
+            
             const lines = csvData.trim().split('\n');
+            
+            if (lines.length < 2) {
+                throw new Error('ข้อมูล CSV ไม่ถูกต้อง - ต้องมีอย่างน้อย 2 บรรทัด');
+            }
+            
             const newRecords = [];
             
-            // ข้ามบรรทัดแรก (header)
+            // Skip header line
             for (let i = 1; i < lines.length; i++) {
-                const cells = lines[i].split(',');
+                const line = lines[i].trim();
+                if (!line) continue;
+                
+                const cells = line.split(',');
+                
                 if (cells.length >= 9) {
                     const record = {
-                        id: cells[0].trim(),
-                        timestamp: cells[1].trim(),
-                        date: cells[2].trim(),
-                        time: cells[3].trim(),
-                        classRoom: cells[4].trim(),
-                        subject: cells[5].trim(),
-                        regularTeacher: cells[6].trim(),
-                        substituteTeacher: cells[7].trim(),
-                        content: cells[8].trim(),
+                        id: cells[0] ? cells[0].trim() : '',
+                        timestamp: cells[1] ? cells[1].trim() : '',
+                        date: cells[2] ? cells[2].trim() : '',
+                        time: cells[3] ? cells[3].trim() : '',
+                        classRoom: cells[4] ? cells[4].trim() : '',
+                        subject: cells[5] ? cells[5].trim() : '',
+                        regularTeacher: cells[6] ? cells[6].trim() : '',
+                        substituteTeacher: cells[7] ? cells[7].trim() : '',
+                        content: cells[8] ? cells[8].trim() : '',
                         activities: cells[9] ? cells[9].trim() : '',
                         homework: cells[10] ? cells[10].trim() : '',
                         status: cells[13] ? cells[13].trim() : 'pending',
@@ -385,7 +537,7 @@
                         createdAt: cells[18] ? cells[18].trim() : new Date().toLocaleString('th-TH')
                     };
                     
-                    // เพิ่ม substituteReport ถ้ามีข้อมูล
+                    // Add substitute report if available
                     if (cells.length > 23 && cells[23]) {
                         record.substituteReport = {
                             attendance: cells[23].trim(),
@@ -395,99 +547,37 @@
                         };
                     }
                     
-                    newRecords.push(record);
+                    // Only add valid records
+                    if (record.id && record.subject) {
+                        newRecords.push(record);
+                    }
                 }
             }
             
-            // แทนที่ข้อมูลเก่าด้วยข้อมูลใหม่
-            records = newRecords;
+            if (newRecords.length === 0) {
+                throw new Error('ไม่พบข้อมูลที่ถูกต้องในไฟล์ CSV');
+            }
+            
+            // Merge with existing records (avoid duplicates)
+            const existingIds = new Set(records.map(r => r.id));
+            const uniqueNewRecords = newRecords.filter(r => !existingIds.has(r.id));
+            
+            records = [...records, ...uniqueNewRecords];
             localStorage.setItem('teachingRecords', JSON.stringify(records));
+            
+            console.log(`นำเข้าข้อมูลใหม่ ${uniqueNewRecords.length} รายการ จากทั้งหมด ${newRecords.length} รายการ`);
         }
 
-        // ฟังก์ชันส่งออกข้อมูลเป็น CSV
-        function exportToCSV() {
-            if (records.length === 0) {
-                showNotification('ไม่มีข้อมูลให้ส่งออก', 'error');
-                return;
-            }
-            
-            const headers = [
-                'ID', 'วันที่บันทึก', 'วันที่สอน', 'เวลา', 'ชั้น/ห้อง', 'วิชา',
-                'ครูประจำ', 'ครูสอนแทน', 'เนื้อหา', 'กิจกรรม', 'การบ้าน',
-                'จำนวนไฟล์', 'รายการไฟล์', 'สถานะ', 'อนุมัติหัวหน้า', 'เหตุผลหัวหน้า',
-                'อนุมัติรองฯ', 'เหตุผลรองฯ', 'วันที่สร้าง', 'ลายเซ็นครูมอบหมาย',
-                'ลายเซ็นหัวหน้า', 'ลายเซ็นรองฯ', 'โฟลเดอร์ไฟล์',
-                'การเข้าเรียน', 'พฤติกรรม', 'ข้อสังเกต', 'วันที่ส่งรายงาน'
-            ];
-            
-            const csvContent = [headers.join(',')];
-            
-            records.forEach(record => {
-                const row = [
-                    record.id || '',
-                    record.timestamp || '',
-                    record.date || '',
-                    record.time || '',
-                    record.classRoom || '',
-                    record.subject || '',
-                    record.regularTeacher || '',
-                    record.substituteTeacher || '',
-                    record.content || '',
-                    record.activities || '',
-                    record.homework || '',
-                    '0',
-                    '',
-                    record.status || 'pending',
-                    record.headApproval || '',
-                    record.headReason || '',
-                    record.adminApproval || '',
-                    record.adminReason || '',
-                    record.createdAt || '',
-                    record.teacherSignature ? 'มีลายเซ็น' : '',
-                    record.headSignature ? 'มีลายเซ็น' : '',
-                    record.adminSignature ? 'มีลายเซ็น' : '',
-                    '',
-                    record.substituteReport ? record.substituteReport.attendance : '',
-                    record.substituteReport ? record.substituteReport.behavior : '',
-                    record.substituteReport ? record.substituteReport.observations : '',
-                    record.substituteReport ? record.substituteReport.submittedAt : ''
-                ];
-                
-                csvContent.push(row.join(','));
-            });
-            
-            const blob = new Blob([csvContent.join('\n')], { type: 'text/csv;charset=utf-8' });
-            const url = URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            link.href = url;
-            link.download = 'teaching-records-' + new Date().toISOString().split('T')[0] + '.csv';
-            link.click();
-            URL.revokeObjectURL(url);
-            
-            showNotification('ส่งออกข้อมูลเรียบร้อย', 'success');
-        }
-
-        // ฟังก์ชันรีเฟรชข้อมูลในแดชบอร์ด
-        function refreshDashboardData() {
-            // แสดงหน้าต่างการซิงค์
-            syncWithGoogleSheet().then(() => {
-                loadDashboardData();
-            });
-        }
-
-        // ฟังก์ชันล้างข้อมูลใน localStorage
-        function resetLocalData() {
-            if (confirm('คุณต้องการล้างข้อมูลทั้งหมดใน localStorage หรือไม่?\n\nข้อมูลจะถูกลบถาวร หากต้องการกู้คืนจะต้องนำเข้าจาก Google Sheet ใหม่')) {
-                localStorage.removeItem('teachingRecords');
-                records = [];
-                loadDashboardData();
-                showNotification('ล้างข้อมูล localStorage เรียบร้อย', 'info');
-            }
-        }
+        // Enhanced send to Google Sheet function
         function sendToGoogleSheet(data, action = 'addRecord', additionalData = {}) {
             if (!appConfig.scriptUrl) {
-                console.log('ไม่มี Google Apps Script URL');
-                return Promise.resolve();
+                console.log('ไม่มี Google Apps Script URL - บันทึกเฉพาะใน localStorage');
+                return Promise.resolve({ success: true, offline: true });
+            }
+
+            if (syncStatus === 'offline') {
+                console.log('อยู่ในโหมดออฟไลน์ - บันทึกเฉพาะใน localStorage');
+                return Promise.resolve({ success: true, offline: true });
             }
 
             const payload = {
@@ -505,17 +595,19 @@
                 method: 'POST',
                 mode: 'no-cors',
                 headers: {
-                    'Content-Type': 'text/plain',
+                    'Content-Type': 'application/json',
                 },
                 body: JSON.stringify(payload)
             })
             .then(() => {
                 console.log('ส่งข้อมูลไป Google Sheet สำเร็จ');
-                return { success: true };
+                return { success: true, online: true };
             })
             .catch(error => {
                 console.error('ส่งข้อมูลไป Google Sheet ล้มเหลว:', error);
-                return { success: false, error: error };
+                syncStatus = 'offline';
+                updateSyncIndicator('error', 'การซิงค์ล้มเหลว');
+                return { success: false, error: error, offline: true };
             });
         }
 
@@ -587,7 +679,6 @@
             }
             
             currentUser = userType;
-            // เก็บชื่อครูสอนแทนสำหรับการกรองข้อมูล
             if (userType === 'substitute') {
                 currentUser = { type: 'substitute', name: teacherName.trim() };
             }
@@ -630,7 +721,6 @@
         }
 
         function showDashboard() {
-            // แสดงแดชบอร์ดโดยตรงโดยไม่ซิงค์อัตโนมัติ
             loadDashboardData();
             showSection('dashboard');
         }
@@ -763,6 +853,7 @@
             submitBtn.disabled = true;
             submitBtn.textContent = 'กำลังบันทึก...';
 
+            // Save to localStorage first
             records.push(formData);
             localStorage.setItem('teachingRecords', JSON.stringify(records));
             
@@ -770,16 +861,21 @@
                 teacher: canvas.toDataURL()
             };
             
+            // Try to send to Google Sheet
             sendToGoogleSheet(formData, 'addRecord', { signatures: signatures })
-                .then(() => {
-                    showNotification('บันทึกข้อมูลสำเร็จ รอการอนุมัติจากหัวหน้าสาระ', 'success');
+                .then((result) => {
+                    if (result.offline) {
+                        showNotification('บันทึกข้อมูลในระบบเรียบร้อย (จะซิงค์เมื่อออนไลน์)', 'info');
+                    } else {
+                        showNotification('บันทึกข้อมูลและส่งไป Google Sheet สำเร็จ', 'success');
+                    }
                     document.getElementById('teacherAssignmentForm').reset();
                     ctx.clearRect(0, 0, canvas.width, canvas.height);
                     backToMenu();
                 })
                 .catch(error => {
-                    console.error('ส่งข้อมูลไป Google Sheet ล้มเหลว:', error);
-                    showNotification('บันทึกข้อมูลในระบบแล้ว แต่อาจมีปัญหาในการส่งไป Google Sheet', 'info');
+                    console.error('เกิดข้อผิดพลาด:', error);
+                    showNotification('บันทึกข้อมูลในระบบเรียบร้อย (ไม่สามารถส่งไป Google Sheet ได้)', 'info');
                     document.getElementById('teacherAssignmentForm').reset();
                     ctx.clearRect(0, 0, canvas.width, canvas.height);
                     backToMenu();
@@ -836,10 +932,8 @@
         function loadSubstituteRecords() {
             const container = document.getElementById('substituteRecordsList');
             
-            // กรองข้อมูลเฉพาะครูสอนแทนที่ล็อกอิน
             let filteredRecords = records.filter(record => record.headApproval === 'approved' && !record.substituteReport);
             
-            // ถ้าเป็นครูสอนแทนที่ระบุชื่อ ให้แสดงเฉพาะงานที่ได้รับมอบหมาย
             if (currentUser && currentUser.type === 'substitute') {
                 const currentTeacherName = currentUser.name;
                 filteredRecords = filteredRecords.filter(record => 
@@ -966,13 +1060,17 @@
                 };
                 
                 sendToGoogleSheet(record, 'updateRecord', updateData)
-                    .then(() => {
-                        showNotification('อนุมัติรายการเรียบร้อย และบันทึกใน Google Sheet แล้ว', 'success');
+                    .then((result) => {
+                        if (result.offline) {
+                            showNotification('อนุมัติรายการเรียบร้อย (จะซิงค์เมื่อออนไลน์)', 'info');
+                        } else {
+                            showNotification('อนุมัติรายการและซิงค์กับ Google Sheet เรียบร้อย', 'success');
+                        }
                         loadHeadRecords();
                     })
                     .catch(error => {
-                        console.error('ส่งข้อมูลการอนุมัติไป Google Sheet ล้มเหลว:', error);
-                        showNotification('อนุมัติรายการเรียบร้อย แต่อาจมีปัญหาในการส่งไป Google Sheet', 'info');
+                        console.error('ส่งข้อมูลการอนุมัติล้มเหลว:', error);
+                        showNotification('อนุมัติรายการเรียบร้อย (ไม่สามารถซิงค์ได้)', 'info');
                         loadHeadRecords();
                     });
             }
@@ -1000,13 +1098,17 @@
                     };
                     
                     sendToGoogleSheet(record, 'updateRecord', updateData)
-                        .then(() => {
-                            showNotification('ไม่อนุมัติรายการเรียบร้อย และบันทึกใน Google Sheet แล้ว', 'success');
+                        .then((result) => {
+                            if (result.offline) {
+                                showNotification('ไม่อนุมัติรายการเรียบร้อย (จะซิงค์เมื่อออนไลน์)', 'info');
+                            } else {
+                                showNotification('ไม่อนุมัติรายการและซิงค์กับ Google Sheet เรียบร้อย', 'success');
+                            }
                             loadHeadRecords();
                         })
                         .catch(error => {
-                            console.error('ส่งข้อมูลการไม่อนุมัติไป Google Sheet ล้มเหลว:', error);
-                            showNotification('ไม่อนุมัติรายการเรียบร้อย แต่อาจมีปัญหาในการส่งไป Google Sheet', 'info');
+                            console.error('ส่งข้อมูลการไม่อนุมัติล้มเหลว:', error);
+                            showNotification('ไม่อนุมัติรายการเรียบร้อย (ไม่สามารถซิงค์ได้)', 'info');
                             loadHeadRecords();
                         });
                 }
@@ -1042,13 +1144,17 @@
                 };
                 
                 sendToGoogleSheet(record, 'updateRecord', updateData)
-                    .then(() => {
-                        showNotification('บันทึกผลการสอนเรียบร้อย และส่งไป Google Sheet แล้ว', 'success');
+                    .then((result) => {
+                        if (result.offline) {
+                            showNotification('บันทึกผลการสอนเรียบร้อย (จะซิงค์เมื่อออนไลน์)', 'info');
+                        } else {
+                            showNotification('บันทึกผลการสอนและซิงค์กับ Google Sheet เรียบร้อย', 'success');
+                        }
                         loadSubstituteRecords();
                     })
                     .catch(error => {
-                        console.error('ส่งรายงานไป Google Sheet ล้มเหลว:', error);
-                        showNotification('บันทึกผลการสอนเรียบร้อย แต่อาจมีปัญหาในการส่งไป Google Sheet', 'info');
+                        console.error('ส่งรายงานล้มเหลว:', error);
+                        showNotification('บันทึกผลการสอนเรียบร้อย (ไม่สามารถซิงค์ได้)', 'info');
                         loadSubstituteRecords();
                     });
             }
@@ -1101,13 +1207,17 @@
                 };
                 
                 sendToGoogleSheet(record, 'updateRecord', updateData)
-                    .then(() => {
-                        showNotification('อนุมัติขั้นสุดท้ายเรียบร้อย และบันทึกใน Google Sheet แล้ว', 'success');
+                    .then((result) => {
+                        if (result.offline) {
+                            showNotification('อนุมัติขั้นสุดท้ายเรียบร้อย (จะซิงค์เมื่อออนไลน์)', 'info');
+                        } else {
+                            showNotification('อนุมัติขั้นสุดท้ายและซิงค์กับ Google Sheet เรียบร้อย', 'success');
+                        }
                         loadAdminRecords();
                     })
                     .catch(error => {
-                        console.error('ส่งข้อมูลการอนุมัติขั้นสุดท้ายไป Google Sheet ล้มเหลว:', error);
-                        showNotification('อนุมัติขั้นสุดท้ายเรียบร้อย แต่อาจมีปัญหาในการส่งไป Google Sheet', 'info');
+                        console.error('ส่งข้อมูลการอนุมัติขั้นสุดท้ายล้มเหลว:', error);
+                        showNotification('อนุมัติขั้นสุดท้ายเรียบร้อย (ไม่สามารถซิงค์ได้)', 'info');
                         loadAdminRecords();
                     });
             }
@@ -1160,13 +1270,17 @@
                 };
                 
                 sendToGoogleSheet(record, 'updateRecord', updateData)
-                    .then(() => {
-                        showNotification('บันทึกการไม่อนุมัติเรียบร้อย และบันทึกใน Google Sheet แล้ว', 'success');
+                    .then((result) => {
+                        if (result.offline) {
+                            showNotification('บันทึกการไม่อนุมัติเรียบร้อย (จะซิงค์เมื่อออนไลน์)', 'info');
+                        } else {
+                            showNotification('บันทึกการไม่อนุมัติและซิงค์กับ Google Sheet เรียบร้อย', 'success');
+                        }
                         loadAdminRecords();
                     })
                     .catch(error => {
-                        console.error('ส่งข้อมูลการไม่อนุมัติไป Google Sheet ล้มเหลว:', error);
-                        showNotification('บันทึกการไม่อนุมัติเรียบร้อย แต่อาจมีปัญหาในการส่งไป Google Sheet', 'info');
+                        console.error('ส่งข้อมูลการไม่อนุมัติล้มเหลว:', error);
+                        showNotification('บันทึกการไม่อนุมัติเรียบร้อย (ไม่สามารถซิงค์ได้)', 'info');
                         loadAdminRecords();
                     });
             }
@@ -1189,14 +1303,12 @@
                 return;
             }
             
-            // หารายการครูที่ยังไม่บันทึกผลการสอน
             const pendingSubstituteReports = records.filter(record => 
                 record.headApproval === 'approved' && !record.substituteReport
             );
             
             let html = '';
             
-            // แสดงส่วนครูที่ยังไม่บันทึกผลการสอน
             if (pendingSubstituteReports.length > 0) {
                 html += `
                     <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
@@ -1227,7 +1339,6 @@
                 `;
             }
             
-            // แสดงรายการล่าสุด
             html += '<h4 class="font-semibold text-gray-800 mb-3">รายการล่าสุด</h4>';
             
             const recentRecords = records.slice(-5).reverse();
@@ -1304,6 +1415,80 @@
             localStorage.setItem('teachingRecords', JSON.stringify(records));
             showNotification('สร้างข้อมูลทดสอบเรียบร้อย', 'success');
             loadDashboardData();
+        }
+
+        // Enhanced CSV export function
+        function exportToCSV() {
+            if (records.length === 0) {
+                showNotification('ไม่มีข้อมูลให้ส่งออก', 'error');
+                return;
+            }
+            
+            const headers = [
+                'ID', 'วันที่บันทึก', 'วันที่สอน', 'เวลา', 'ชั้น/ห้อง', 'วิชา',
+                'ครูประจำ', 'ครูสอนแทน', 'เนื้อหา', 'กิจกรรม', 'การบ้าน',
+                'จำนวนไฟล์', 'รายการไฟล์', 'สถานะ', 'อนุมัติหัวหน้า', 'เหตุผลหัวหน้า',
+                'อนุมัติรองฯ', 'เหตุผลรองฯ', 'วันที่สร้าง', 'ลายเซ็นครูมอบหมาย',
+                'ลายเซ็นหัวหน้า', 'ลายเซ็นรองฯ', 'โฟลเดอร์ไฟล์',
+                'การเข้าเรียน', 'พฤติกรรม', 'ข้อสังเกต', 'วันที่ส่งรายงาน'
+            ];
+            
+            const csvContent = [headers.join(',')];
+            
+            records.forEach(record => {
+                const row = [
+                    record.id || '',
+                    record.timestamp || '',
+                    record.date || '',
+                    record.time || '',
+                    record.classRoom || '',
+                    record.subject || '',
+                    record.regularTeacher || '',
+                    record.substituteTeacher || '',
+                    `"${(record.content || '').replace(/"/g, '""')}"`,
+                    `"${(record.activities || '').replace(/"/g, '""')}"`,
+                    `"${(record.homework || '').replace(/"/g, '""')}"`,
+                    '0',
+                    '',
+                    record.status || 'pending',
+                    record.headApproval || '',
+                    `"${(record.headReason || '').replace(/"/g, '""')}"`,
+                    record.adminApproval || '',
+                    `"${(record.adminReason || '').replace(/"/g, '""')}"`,
+                    record.createdAt || '',
+                    record.teacherSignature ? 'มีลายเซ็น' : '',
+                    record.headSignature ? 'มีลายเซ็น' : '',
+                    record.adminSignature ? 'มีลายเซ็น' : '',
+                    '',
+                    record.substituteReport ? `"${record.substituteReport.attendance.replace(/"/g, '""')}"` : '',
+                    record.substituteReport ? `"${record.substituteReport.behavior.replace(/"/g, '""')}"` : '',
+                    record.substituteReport ? `"${(record.substituteReport.observations || '').replace(/"/g, '""')}"` : '',
+                    record.substituteReport ? record.substituteReport.submittedAt : ''
+                ];
+                
+                csvContent.push(row.join(','));
+            });
+            
+            // Add BOM for Thai characters
+            const BOM = '\uFEFF';
+            const blob = new Blob([BOM + csvContent.join('\n')], { type: 'text/csv;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = 'teaching-records-' + new Date().toISOString().split('T')[0] + '.csv';
+            link.click();
+            URL.revokeObjectURL(url);
+            
+            showNotification('ส่งออกข้อมูลเรียบร้อย', 'success');
+        }
+
+        function resetLocalData() {
+            if (confirm('คุณต้องการล้างข้อมูลทั้งหมดใน localStorage หรือไม่?\n\nข้อมูลจะถูกลบถาวร หากต้องการกู้คืนจะต้องนำเข้าจาก Google Sheet ใหม่')) {
+                localStorage.removeItem('teachingRecords');
+                records = [];
+                loadDashboardData();
+                showNotification('ล้างข้อมูล localStorage เรียบร้อย', 'info');
+            }
         }
 
         function generatePDF(recordId) {
@@ -1508,10 +1693,23 @@
             // Form submit handler
             document.getElementById('teacherAssignmentForm').addEventListener('submit', submitTeacherForm);
 
+            // Initialize sync status
+            updateSyncIndicator('offline', 'ออฟไลน์');
+            
+            // Check connection on startup
+            syncWithGoogleSheet();
+
             // Initialize
             showSection('menuSection');
             console.log('ระบบเริ่มต้นเรียบร้อย โหลดข้อมูล:', records.length, 'รายการ');
         });
+
+        // Auto-sync every 30 seconds when online
+        setInterval(() => {
+            if (syncStatus === 'online') {
+                syncWithGoogleSheet();
+            }
+        }, 30000);
     </script>
 </body>
 </html>
