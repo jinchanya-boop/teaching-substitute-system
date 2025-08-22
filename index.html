@@ -1434,15 +1434,15 @@
                 const passwordField = document.getElementById('passwordField');
                 const teacherNameField = document.getElementById('teacherNameField');
                 
+                // ซ่อนทุกช่องก่อน
+                passwordField.classList.add('hidden');
+                teacherNameField.classList.add('hidden');
+                
+                // แสดงช่องที่ต้องการตามประเภทผู้ใช้
                 if (this.value === 'head' || this.value === 'admin') {
                     passwordField.classList.remove('hidden');
-                    teacherNameField.classList.add('hidden');
                 } else if (this.value === 'substitute') {
-                    passwordField.classList.add('hidden');
                     teacherNameField.classList.remove('hidden');
-                } else {
-                    passwordField.classList.add('hidden');
-                    teacherNameField.classList.add('hidden');
                 }
             });
 
