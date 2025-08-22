@@ -723,7 +723,7 @@
             }, 100);
         }
 
-        // Record actions
+        // Record actions - เพิ่มการส่งข้อมูลไป Google Sheet
         function approveRecord(recordId) {
             const canvas = document.getElementById('headSignature_' + recordId);
             const ctx = canvas.getContext('2d');
@@ -748,9 +748,22 @@
                 record.headReason = 'อนุมัติโดยหัวหน้าสาระ';
                 record.headSignature = canvas.toDataURL();
                 record.status = 'head_approved';
+                record.headApprovedAt = new Date().toLocaleString('th-TH');
+                
+                // บันทึกใน localStorage
                 localStorage.setItem('teachingRecords', JSON.stringify(records));
-                showNotification('อนุมัติรายการเรียบร้อย', 'success');
-                loadHeadRecords();
+                
+                // ส่งข้อมูลอัพเดทไป Google Sheet
+                sendToGoogleSheet(record, 'updateRecord')
+                    .then(() => {
+                        showNotification('อนุมัติรายการเรียบร้อย และบันทึกใน Google Sheet แล้ว', 'success');
+                        loadHeadRecords();
+                    })
+                    .catch(error => {
+                        console.error('ส่งข้อมูลการอนุมัติไป Google Sheet ล้มเหลว:', error);
+                        showNotification('อนุมัติรายการเรียบร้อย แต่อาจมีปัญหาในการส่งไป Google Sheet', 'info');
+                        loadHeadRecords();
+                    });
             }
         }
 
@@ -762,9 +775,22 @@
                     record.headApproval = 'rejected';
                     record.headReason = reason;
                     record.status = 'rejected';
+                    record.headRejectedAt = new Date().toLocaleString('th-TH');
+                    
+                    // บันทึกใน localStorage
                     localStorage.setItem('teachingRecords', JSON.stringify(records));
-                    showNotification('ไม่อนุมัติรายการเรียบร้อย', 'success');
-                    loadHeadRecords();
+                    
+                    // ส่งข้อมูลอัพเดทไป Google Sheet
+                    sendToGoogleSheet(record, 'updateRecord')
+                        .then(() => {
+                            showNotification('ไม่อนุมัติรายการเรียบร้อย และบันทึกใน Google Sheet แล้ว', 'success');
+                            loadHeadRecords();
+                        })
+                        .catch(error => {
+                            console.error('ส่งข้อมูลการไม่อนุมัติไป Google Sheet ล้มเหลว:', error);
+                            showNotification('ไม่อนุมัติรายการเรียบร้อย แต่อาจมีปัญหาในการส่งไป Google Sheet', 'info');
+                            loadHeadRecords();
+                        });
                 }
             }
         }
@@ -826,9 +852,21 @@
                 record.adminSignature = canvas.toDataURL();
                 record.status = 'completed';
                 record.finalApprovalDate = new Date().toLocaleString('th-TH');
+                
+                // บันทึกใน localStorage
                 localStorage.setItem('teachingRecords', JSON.stringify(records));
-                showNotification('อนุมัติขั้นสุดท้ายเรียบร้อย', 'success');
-                loadAdminRecords();
+                
+                // ส่งข้อมูลอัพเดทไป Google Sheet
+                sendToGoogleSheet(record, 'updateRecord')
+                    .then(() => {
+                        showNotification('อนุมัติขั้นสุดท้ายเรียบร้อย และบันทึกใน Google Sheet แล้ว', 'success');
+                        loadAdminRecords();
+                    })
+                    .catch(error => {
+                        console.error('ส่งข้อมูลการอนุมัติขั้นสุดท้ายไป Google Sheet ล้มเหลว:', error);
+                        showNotification('อนุมัติขั้นสุดท้ายเรียบร้อย แต่อาจมีปัญหาในการส่งไป Google Sheet', 'info');
+                        loadAdminRecords();
+                    });
             }
         }
 
@@ -864,9 +902,22 @@
                 record.adminReason = reason;
                 record.adminSignature = canvas.toDataURL();
                 record.status = 'rejected';
+                record.finalRejectionDate = new Date().toLocaleString('th-TH');
+                
+                // บันทึกใน localStorage
                 localStorage.setItem('teachingRecords', JSON.stringify(records));
-                showNotification('บันทึกการไม่อนุมัติเรียบร้อย', 'success');
-                loadAdminRecords();
+                
+                // ส่งข้อมูลอัพเดทไป Google Sheet
+                sendToGoogleSheet(record, 'updateRecord')
+                    .then(() => {
+                        showNotification('บันทึกการไม่อนุมัติเรียบร้อย และบันทึกใน Google Sheet แล้ว', 'success');
+                        loadAdminRecords();
+                    })
+                    .catch(error => {
+                        console.error('ส่งข้อมูลการไม่อนุมัติไป Google Sheet ล้มเหลว:', error);
+                        showNotification('บันทึกการไม่อนุมัติเรียบร้อย แต่อาจมีปัญหาในการส่งไป Google Sheet', 'info');
+                        loadAdminRecords();
+                    });
             }
         }
 
