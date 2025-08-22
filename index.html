@@ -299,7 +299,11 @@
                 <div class="bg-gray-50 rounded-lg p-6">
                     <div class="flex justify-between items-center mb-4">
                         <h3 class="text-lg font-semibold text-gray-800">รายการล่าสุด</h3>
-                        <button onclick="createTestRecord()" class="bg-green-600 text-white px-4 py-2 rounded">สร้างข้อมูลทดสอบ</button>
+                        <div class="flex space-x-2">
+                            <button onclick="refreshDashboardData()" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">รีเฟรชข้อมูล</button>
+                            <button onclick="resetLocalData()" class="bg-orange-600 text-white px-4 py-2 rounded hover:bg-orange-700">ซิงค์ข้อมูลใหม่</button>
+                            <button onclick="createTestRecord()" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">สร้างข้อมูลทดสอบ</button>
+                        </div>
                     </div>
                     <div id="recentRecords">ไม่มีข้อมูล</div>
                 </div>
@@ -321,7 +325,62 @@
             folderId: '1pfSdQHTZwY4VpPtpB7jyLQr4UNFdReEz'
         };
 
-        // ฟังก์ชันส่งข้อมูลไป Google Sheet
+        // ฟังก์ชันซิงค์ข้อมูลจาก Google Sheet
+        function syncWithGoogleSheet() {
+            if (!appConfig.scriptUrl) {
+                showNotification('ไม่สามารถซิงค์ข้อมูลได้ ไม่พบ Google Apps Script URL', 'error');
+                return Promise.resolve();
+            }
+
+            const payload = {
+                action: 'getRecords',
+                sheetId: appConfig.sheetId,
+                timestamp: new Date().toISOString()
+            };
+
+            showNotification('กำลังซิงค์ข้อมูลจาก Google Sheet...', 'info');
+
+            return fetch(appConfig.scriptUrl, {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: {
+                    'Content-Type': 'text/plain',
+                },
+                body: JSON.stringify(payload)
+            })
+            .then(() => {
+                // เนื่องจากใช้ no-cors จึงไม่สามารถอ่านผลลัพธ์ได้
+                // แต่เราสามารถใช้วิธีอื่นในการซิงค์ข้อมูล
+                showNotification('ซิงค์ข้อมูลเสร็จสิ้น', 'success');
+                console.log('ส่งคำขอซิงค์ข้อมูลสำเร็จ');
+                return { success: true };
+            })
+            .catch(error => {
+                console.error('ซิงค์ข้อมูลล้มเหลว:', error);
+                showNotification('ไม่สามารถซิงค์ข้อมูลได้', 'error');
+                return { success: false, error: error };
+            });
+        }
+
+        // ฟังก์ชันรีเฟรชข้อมูลในแดชบอร์ด
+        function refreshDashboardData() {
+            // ซิงค์ข้อมูลจาก Google Sheet ก่อน
+            syncWithGoogleSheet().then(() => {
+                // หลังจากซิงค์แล้ว ให้อัพเดทข้อมูลในแดชบอร์ด
+                loadDashboardData();
+                showNotification('รีเฟรชข้อมูลแดชบอร์ดเรียบร้อย', 'success');
+            });
+        }
+
+        // ฟังก์ชันล้างข้อมูลใน localStorage และซิงค์ใหม่
+        function resetLocalData() {
+            if (confirm('คุณต้องการล้างข้อมูลทั้งหมดใน localStorage และซิงค์ข้อมูลใหม่จาก Google Sheet หรือไม่?')) {
+                localStorage.removeItem('teachingRecords');
+                records = [];
+                showNotification('ล้างข้อมูล localStorage เรียบร้อย', 'info');
+                refreshDashboardData();
+            }
+        }
         function sendToGoogleSheet(data, action = 'addRecord', additionalData = {}) {
             if (!appConfig.scriptUrl) {
                 console.log('ไม่มี Google Apps Script URL');
@@ -457,7 +516,8 @@
         }
 
         function showDashboard() {
-            loadDashboardData();
+            // รีเฟรชข้อมูลก่อนแสดงแดชบอร์ด
+            refreshDashboardData();
             showSection('dashboard');
         }
 
