@@ -884,15 +884,75 @@
                 html += '<p class="mb-3"><strong>เนื้อหา:</strong> ' + (record.content || 'ไม่ระบุ') + '</p>';
                 
                 html += '<div class="mt-4 border-t pt-4">';
-                html += '<h5 class="font-medium text-gray-700 mb-2">การอนุมัติ</h5>';
+                html += '<h5 class="font-medium text-gray-700 mb-2">ลายเซ็นหัวหน้าสาระ (สำหรับการอนุมัติ)</h5>';
+                html += '<canvas id="headSignature_' + record.id + '" width="400" height="120" ';
+                html += 'class="signature-pad w-full bg-white rounded cursor-crosshair border-2 border-green-300 mb-2"></canvas>';
+                html += '<div class="flex space-x-2 mb-4">';
+                html += '<button onclick="clearSignature(\'headSignature_' + record.id + '\')" ';
+                html += 'class="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600">ลบลายเซ็น</button>';
+                html += '</div>';
                 html += '<div class="flex space-x-2">';
-                html += '<button onclick="quickApproveRecord(\'' + record.id + '\')" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">✓ อนุมัติ</button>';
+                html += '<button onclick="approveWithSignature(\'' + record.id + '\')" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">✓ อนุมัติพร้อมลายเซ็น</button>';
                 html += '<button onclick="quickRejectRecord(\'' + record.id + '\')" class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700">✗ ไม่อนุมัติ</button>';
                 html += '</div>';
                 html += '</div>';
                 html += '</div>';
             }
             container.innerHTML = html;
+            
+            // Initialize signature pads after rendering
+            setTimeout(() => {
+                for (let i = 0; i < pendingRecords.length; i++) {
+                    initSignaturePad('headSignature_' + pendingRecords[i].id);
+                }
+            }, 100);
+        };
+
+        window.approveWithSignature = function(recordId) {
+            const canvas = document.getElementById('headSignature_' + recordId);
+            if (!canvas) {
+                showNotification('ไม่พบพื้นที่ลายเซ็น', 'error');
+                return;
+            }
+
+            // ตรวจสอบว่ามีลายเซ็นหรือไม่
+            const ctx = canvas.getContext('2d');
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            let hasSignature = false;
+            
+            for (let i = 0; i < imageData.data.length; i += 4) {
+                const a = imageData.data[i + 3];
+                if (a > 0) {
+                    hasSignature = true;
+                    break;
+                }
+            }
+            
+            if (!hasSignature) {
+                showNotification('กรุณาเซ็นลายเซ็นก่อนอนุมัติ', 'error');
+                return;
+            }
+
+            const signatureData = canvas.toDataURL();
+            
+            for (let i = 0; i < records.length; i++) {
+                if (records[i].id === recordId) {
+                    records[i].headApproval = 'approved';
+                    records[i].headReason = 'อนุมัติโดยหัวหน้าสาระพร้อมลายเซ็น';
+                    records[i].headSignature = signatureData;
+                    records[i].status = 'head_approved';
+                    records[i].headApprovedAt = new Date().toLocaleString('th-TH');
+                    break;
+                }
+            }
+            
+            localStorage.setItem('teachingRecords', JSON.stringify(records));
+            showNotification('อนุมัติรายการเรียบร้อย พร้อมบันทึกลายเซ็น', 'success');
+            
+            setTimeout(() => {
+                loadHeadRecords();
+            }, 500);
+        };
         };
 
         window.showAllForHead = function() {
@@ -1103,14 +1163,141 @@
                 }
                 
                 html += '<div class="mt-4 border-t pt-4">';
+                html += '<h5 class="font-medium text-purple-700 mb-2">เหตุผลในการพิจารณา (บังคับกรอก)</h5>';
+                html += '<textarea id="adminReason_' + record.id + '" rows="3" placeholder="กรุณาระบุเหตุผลที่ชัดเจนในการอนุมัติหรือไม่อนุมัติ" ';
+                html += 'class="w-full border-2 border-purple-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 mb-3" required></textarea>';
+                
+                html += '<h5 class="font-medium text-purple-700 mb-2">ลายเซ็นรองผู้อำนวยการ (บังคับ)</h5>';
+                html += '<canvas id="adminSignature_' + record.id + '" width="400" height="120" ';
+                html += 'class="signature-pad w-full bg-white rounded cursor-crosshair border-2 border-purple-300 mb-2"></canvas>';
+                html += '<div class="flex space-x-2 mb-4">';
+                html += '<button onclick="clearSignature(\'adminSignature_' + record.id + '\')" ';
+                html += 'class="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600">ลบลายเซ็น</button>';
+                html += '</div>';
                 html += '<div class="flex space-x-2">';
-                html += '<button onclick="finalApprove(\'' + record.id + '\')" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">✓ อนุมัติขั้นสุดท้าย</button>';
-                html += '<button onclick="finalReject(\'' + record.id + '\')" class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700">✗ ไม่อนุมัติ</button>';
+                html += '<button onclick="finalApproveWithSignature(\'' + record.id + '\')" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">✓ อนุมัติขั้นสุดท้าย</button>';
+                html += '<button onclick="finalRejectWithSignature(\'' + record.id + '\')" class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700">✗ ไม่อนุมัติ</button>';
                 html += '</div>';
                 html += '</div>';
                 html += '</div>';
             }
             container.innerHTML = html;
+            
+            // Initialize signature pads after rendering
+            setTimeout(() => {
+                for (let i = 0; i < readyRecords.length; i++) {
+                    initSignaturePad('adminSignature_' + readyRecords[i].id);
+                }
+            }, 100);
+        };
+
+        window.finalApproveWithSignature = function(recordId) {
+            const reasonTextarea = document.getElementById('adminReason_' + recordId);
+            const canvas = document.getElementById('adminSignature_' + recordId);
+            
+            if (!canvas) {
+                showNotification('ไม่พบพื้นที่ลายเซ็น', 'error');
+                return;
+            }
+
+            const reason = reasonTextarea ? reasonTextarea.value.trim() : '';
+            if (!reason || reason.length < 10) {
+                showNotification('กรุณาระบุเหตุผลในการพิจารณาอย่างน้อย 10 ตัวอักษร', 'error');
+                return;
+            }
+
+            // ตรวจสอบว่ามีลายเซ็นหรือไม่
+            const ctx = canvas.getContext('2d');
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            let hasSignature = false;
+            
+            for (let i = 0; i < imageData.data.length; i += 4) {
+                const a = imageData.data[i + 3];
+                if (a > 0) {
+                    hasSignature = true;
+                    break;
+                }
+            }
+            
+            if (!hasSignature) {
+                showNotification('กรุณาเซ็นลายเซ็นก่อนอนุมัติ', 'error');
+                return;
+            }
+
+            const signatureData = canvas.toDataURL();
+            
+            for (let i = 0; i < records.length; i++) {
+                if (records[i].id === recordId) {
+                    records[i].adminApproval = 'approved';
+                    records[i].adminReason = reason;
+                    records[i].adminSignature = signatureData;
+                    records[i].status = 'completed';
+                    records[i].finalApprovalDate = new Date().toLocaleString('th-TH');
+                    break;
+                }
+            }
+            
+            localStorage.setItem('teachingRecords', JSON.stringify(records));
+            showNotification('อนุมัติขั้นสุดท้ายเรียบร้อย พร้อมบันทึกลายเซ็น', 'success');
+            
+            setTimeout(() => {
+                loadAdminRecords();
+            }, 500);
+        };
+
+        window.finalRejectWithSignature = function(recordId) {
+            const reasonTextarea = document.getElementById('adminReason_' + recordId);
+            const canvas = document.getElementById('adminSignature_' + recordId);
+            
+            if (!canvas) {
+                showNotification('ไม่พบพื้นที่ลายเซ็น', 'error');
+                return;
+            }
+
+            const reason = reasonTextarea ? reasonTextarea.value.trim() : '';
+            if (!reason || reason.length < 10) {
+                showNotification('กรุณาระบุเหตุผลในการพิจารณาอย่างน้อย 10 ตัวอักษร', 'error');
+                return;
+            }
+
+            // ตรวจสอบว่ามีลายเซ็นหรือไม่
+            const ctx = canvas.getContext('2d');
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            let hasSignature = false;
+            
+            for (let i = 0; i < imageData.data.length; i += 4) {
+                const a = imageData.data[i + 3];
+                if (a > 0) {
+                    hasSignature = true;
+                    break;
+                }
+            }
+            
+            if (!hasSignature) {
+                showNotification('กรุณาเซ็นลายเซ็นก่อนไม่อนุมัติ', 'error');
+                return;
+            }
+
+            const signatureData = canvas.toDataURL();
+            
+            for (let i = 0; i < records.length; i++) {
+                if (records[i].id === recordId) {
+                    records[i].adminApproval = 'rejected';
+                    records[i].adminReason = reason;
+                    records[i].adminSignature = signatureData;
+                    records[i].status = 'rejected';
+                    records[i].finalRejectionDate = new Date().toLocaleString('th-TH');
+                    break;
+                }
+            }
+            
+            localStorage.setItem('teachingRecords', JSON.stringify(records));
+            showNotification('บันทึกการไม่อนุมัติเรียบร้อย พร้อมบันทึกลายเซ็น', 'success');
+            
+            setTimeout(() => {
+                loadAdminRecords();
+            }, 500);
+        };
         };
 
         window.finalApprove = function(recordId) {
