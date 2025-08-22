@@ -1189,17 +1189,86 @@
                 return;
             }
             
-            const recentRecords = records.slice(-5).reverse();
+            // หารายการครูที่ยังไม่บันทึกผลการสอน
+            const pendingSubstituteReports = records.filter(record => 
+                record.headApproval === 'approved' && !record.substituteReport
+            );
+            
             let html = '';
+            
+            // แสดงส่วนครูที่ยังไม่บันทึกผลการสอน
+            if (pendingSubstituteReports.length > 0) {
+                html += `
+                    <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
+                        <h4 class="font-semibold text-yellow-800 mb-3">
+                            ⚠️ ครูสอนแทนที่ยังไม่บันทึกผลการสอน (${pendingSubstituteReports.length} คน)
+                        </h4>
+                        <div class="space-y-2">
+                `;
+                
+                pendingSubstituteReports.forEach(record => {
+                    html += `
+                        <div class="bg-white p-3 rounded border-l-4 border-yellow-400">
+                            <div class="flex justify-between items-center">
+                                <div>
+                                    <span class="font-medium text-gray-800">${record.substituteTeacher}</span>
+                                    <span class="text-gray-600">- ${record.subject} (${record.classRoom})</span>
+                                    <span class="text-sm text-gray-500">วันที่: ${record.date}</span>
+                                </div>
+                                <span class="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded">รอบันทึกผล</span>
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                html += `
+                        </div>
+                    </div>
+                `;
+            }
+            
+            // แสดงรายการล่าสุด
+            html += '<h4 class="font-semibold text-gray-800 mb-3">รายการล่าสุด</h4>';
+            
+            const recentRecords = records.slice(-5).reverse();
             recentRecords.forEach(record => {
+                let statusBadge = '';
+                let statusColor = '';
+                
+                if (record.status === 'completed') {
+                    statusBadge = 'เสร็จสิ้น';
+                    statusColor = 'bg-green-100 text-green-800';
+                } else if (record.status === 'rejected') {
+                    statusBadge = 'ไม่อนุมัติ';
+                    statusColor = 'bg-red-100 text-red-800';
+                } else if (record.headApproval === 'approved' && !record.substituteReport) {
+                    statusBadge = 'รอบันทึกผล';
+                    statusColor = 'bg-yellow-100 text-yellow-800';
+                } else if (record.headApproval === 'approved') {
+                    statusBadge = 'รอการอนุมัติ';
+                    statusColor = 'bg-blue-100 text-blue-800';
+                } else {
+                    statusBadge = 'รออนุมัติ';
+                    statusColor = 'bg-gray-100 text-gray-800';
+                }
+                
                 html += `
                     <div class="bg-white p-4 rounded border mb-2">
-                        <h4 class="font-semibold text-gray-800">${record.subject} - ${record.classRoom}</h4>
-                        <p class="text-sm text-gray-600">ครูประจำ: ${record.regularTeacher} | วันที่: ${record.date}</p>
-                        <button onclick="generatePDF('${record.id}')" class="mt-2 bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700">พิมพ์ PDF</button>
+                        <div class="flex justify-between items-start">
+                            <div class="flex-1">
+                                <h4 class="font-semibold text-gray-800">${record.subject} - ${record.classRoom}</h4>
+                                <p class="text-sm text-gray-600">ครูประจำ: ${record.regularTeacher} | ครูสอนแทน: ${record.substituteTeacher}</p>
+                                <p class="text-sm text-gray-500">วันที่: ${record.date}</p>
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                <span class="text-xs px-2 py-1 rounded ${statusColor}">${statusBadge}</span>
+                                <button onclick="generatePDF('${record.id}')" class="bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700">พิมพ์ PDF</button>
+                            </div>
+                        </div>
                     </div>
                 `;
             });
+            
             recentContainer.innerHTML = html;
         }
 
