@@ -321,7 +321,7 @@
             folderId: '1pfSdQHTZwY4VpPtpB7jyLQr4UNFdReEz'
         };
 
-        // ฟังก์ชันส่งข้อมูลไป Google Sheet - แก้ไขแล้ว
+        // ฟังก์ชันส่งข้อมูลไป Google Sheet
         function sendToGoogleSheet(data, action = 'addRecord', additionalData = {}) {
             if (!appConfig.scriptUrl) {
                 console.log('ไม่มี Google Apps Script URL');
@@ -589,11 +589,9 @@
             submitBtn.disabled = true;
             submitBtn.textContent = 'กำลังบันทึก...';
 
-            // บันทึกใน localStorage ก่อน
             records.push(formData);
             localStorage.setItem('teachingRecords', JSON.stringify(records));
             
-            // ส่งข้อมูลไป Google Sheet พร้อมลายเซ็น
             const signatures = {
                 teacher: canvas.toDataURL()
             };
@@ -740,7 +738,7 @@
             }, 100);
         }
 
-        // Record actions - แก้ไขการส่งข้อมูลไป Google Sheet
+        // Record actions
         function approveRecord(recordId) {
             const canvas = document.getElementById('headSignature_' + recordId);
             const ctx = canvas.getContext('2d');
@@ -769,7 +767,6 @@
                 
                 localStorage.setItem('teachingRecords', JSON.stringify(records));
                 
-                // ส่งข้อมูลอัพเดทไป Google Sheet พร้อมลายเซ็น
                 const updateData = {
                     recordId: recordId,
                     updateData: {
@@ -805,7 +802,6 @@
                     
                     localStorage.setItem('teachingRecords', JSON.stringify(records));
                     
-                    // ส่งข้อมูลการไม่อนุมัติไป Google Sheet
                     const updateData = {
                         recordId: recordId,
                         updateData: {
@@ -849,7 +845,6 @@
                 record.status = 'substitute_reported';
                 localStorage.setItem('teachingRecords', JSON.stringify(records));
                 
-                // ส่งข้อมูลรายงานไป Google Sheet
                 const updateData = {
                     recordId: recordId,
                     updateData: {
@@ -907,7 +902,6 @@
                 
                 localStorage.setItem('teachingRecords', JSON.stringify(records));
                 
-                // ส่งข้อมูลการอนุมัติขั้นสุดท้ายไป Google Sheet
                 const updateData = {
                     recordId: recordId,
                     updateData: {
@@ -967,7 +961,6 @@
                 
                 localStorage.setItem('teachingRecords', JSON.stringify(records));
                 
-                // ส่งข้อมูลการไม่อนุมัติขั้นสุดท้ายไป Google Sheet
                 const updateData = {
                     recordId: recordId,
                     updateData: {
@@ -1056,7 +1049,6 @@
             loadDashboardData();
         }
 
-        // แก้ไขฟังก์ชัน generatePDF ให้อยู่ในหน้าเดียว
         function generatePDF(recordId) {
             const record = records.find(r => r.id === recordId);
             if (!record) {
@@ -1223,4 +1215,39 @@
         </div>
     </div>
 </body>
-</html>`
+</html>`;
+            
+            const printWindow = window.open('', '_blank');
+            if (printWindow) {
+                printWindow.document.write(html);
+                printWindow.document.close();
+                printWindow.onload = function() {
+                    printWindow.print();
+                };
+            } else {
+                showNotification('ไม่สามารถเปิดหน้าต่างพิมพ์ได้ กรุณาอนุญาตการเปิด popup', 'error');
+            }
+        }
+
+        // Event listeners and initialization
+        document.addEventListener('DOMContentLoaded', function() {
+            // User type change handler
+            document.getElementById('userType').addEventListener('change', function() {
+                const passwordField = document.getElementById('passwordField');
+                if (this.value === 'head' || this.value === 'admin') {
+                    passwordField.classList.remove('hidden');
+                } else {
+                    passwordField.classList.add('hidden');
+                }
+            });
+
+            // Form submit handler
+            document.getElementById('teacherAssignmentForm').addEventListener('submit', submitTeacherForm);
+
+            // Initialize
+            showSection('menuSection');
+            console.log('ระบบเริ่มต้นเรียบร้อย โหลดข้อมูล:', records.length, 'รายการ');
+        });
+    </script>
+</body>
+</html>
