@@ -302,6 +302,44 @@
         // Global variables
         let currentUser = null;
         let records = JSON.parse(localStorage.getItem('teachingRecords') || '[]');
+        
+        // Google Apps Script configuration
+        const appConfig = {
+            scriptUrl: 'https://script.google.com/macros/s/AKfycbxh8eE0eSTzD6rSyXE2cRVpXjU7hTBJ9IuiCI1lG_07CbTHRr0oROC3x2t4aeGjlJf-/exec',
+            sheetId: '137OMps_3meAY5lTwfR-Aq4QhqSn5ul1Eqiz8SjALyf4',
+            folderId: '1pfSdQHTZwY4VpPtpB7jyLQr4UNFdReEz'
+        };
+
+        // ฟังก์ชันส่งข้อมูลไป Google Sheet
+        function sendToGoogleSheet(data, action = 'addRecord') {
+            if (!appConfig.scriptUrl) {
+                console.log('ไม่มี Google Apps Script URL');
+                return Promise.resolve();
+            }
+
+            const payload = {
+                action: action,
+                data: data,
+                sheetId: appConfig.sheetId,
+                folderId: appConfig.folderId,
+                timestamp: new Date().toISOString()
+            };
+
+            return fetch(appConfig.scriptUrl, {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: {
+                    'Content-Type': 'text/plain',
+                },
+                body: JSON.stringify(payload)
+            })
+            .then(() => {
+                console.log('ส่งข้อมูลไป Google Sheet สำเร็จ');
+            })
+            .catch(error => {
+                console.error('ส่งข้อมูลไป Google Sheet ล้มเหลว:', error);
+            });
+        }
 
         // Notification system
         function showNotification(message, type = 'info') {
@@ -407,7 +445,7 @@
             showSection('dashboard');
         }
 
-        // Signature pad
+        // Signature pad - แก้ไขการคำนวณตำแหน่ง
         function initSignaturePad(canvasId) {
             const canvas = document.getElementById(canvasId);
             if (!canvas) return;
@@ -420,23 +458,35 @@
             ctx.strokeStyle = '#000000';
             ctx.lineWidth = 3;
 
+            function getEventPos(e) {
+                const rect = canvas.getBoundingClientRect();
+                const scaleX = canvas.width / rect.width;
+                const scaleY = canvas.height / rect.height;
+                
+                const clientX = e.clientX || (e.touches ? e.touches[0].clientX : 0);
+                const clientY = e.clientY || (e.touches ? e.touches[0].clientY : 0);
+                
+                return {
+                    x: (clientX - rect.left) * scaleX,
+                    y: (clientY - rect.top) * scaleY
+                };
+            }
+
             function startDrawing(e) {
                 isDrawing = true;
-                const rect = canvas.getBoundingClientRect();
-                const x = (e.clientX || e.touches[0].clientX) - rect.left;
-                const y = (e.clientY || e.touches[0].clientY) - rect.top;
+                const pos = getEventPos(e);
                 ctx.beginPath();
-                ctx.moveTo(x, y);
+                ctx.moveTo(pos.x, pos.y);
                 e.preventDefault();
             }
 
             function draw(e) {
                 if (!isDrawing) return;
-                const rect = canvas.getBoundingClientRect();
-                const x = (e.clientX || e.touches[0].clientX) - rect.left;
-                const y = (e.clientY || e.touches[0].clientY) - rect.top;
-                ctx.lineTo(x, y);
+                const pos = getEventPos(e);
+                ctx.lineTo(pos.x, pos.y);
                 ctx.stroke();
+                ctx.beginPath();
+                ctx.moveTo(pos.x, pos.y);
                 e.preventDefault();
             }
 
@@ -447,9 +497,10 @@
             canvas.addEventListener('mousedown', startDrawing);
             canvas.addEventListener('mousemove', draw);
             canvas.addEventListener('mouseup', stopDrawing);
-            canvas.addEventListener('touchstart', startDrawing);
-            canvas.addEventListener('touchmove', draw);
-            canvas.addEventListener('touchend', stopDrawing);
+            canvas.addEventListener('mouseout', stopDrawing);
+            canvas.addEventListener('touchstart', startDrawing, { passive: false });
+            canvas.addEventListener('touchmove', draw, { passive: false });
+            canvas.addEventListener('touchend', stopDrawing, { passive: false });
         }
 
         function clearSignature(canvasId) {
@@ -479,7 +530,7 @@
             showNotification('ทดสอบลายเซ็นเรียบร้อย', 'info');
         }
 
-        // Form submission
+        // Form submission - เพิ่มการส่งข้อมูลไป Google Sheet
         function submitTeacherForm(e) {
             e.preventDefault();
             
@@ -517,13 +568,35 @@
                 teacherSignature: canvas.toDataURL()
             };
 
+            // แสดงสถานะกำลังบันทึก
+            const submitBtn = document.querySelector('#teacherForm button[type="submit"]');
+            const originalText = submitBtn.textContent;
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'กำลังบันทึก...';
+
+            // บันทึกใน localStorage ก่อน
             records.push(formData);
             localStorage.setItem('teachingRecords', JSON.stringify(records));
             
-            showNotification('บันทึกข้อมูลสำเร็จ รอการอนุมัติจากหัวหน้าสาระ', 'success');
-            document.getElementById('teacherAssignmentForm').reset();
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            backToMenu();
+            // ส่งข้อมูลไป Google Sheet
+            sendToGoogleSheet(formData)
+                .then(() => {
+                    showNotification('บันทึกข้อมูลสำเร็จ รอการอนุมัติจากหัวหน้าสาระ', 'success');
+                    document.getElementById('teacherAssignmentForm').reset();
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    backToMenu();
+                })
+                .catch(error => {
+                    console.error('ส่งข้อมูลไป Google Sheet ล้มเหลว:', error);
+                    showNotification('บันทึกข้อมูลในระบบแล้ว แต่อาจมีปัญหาในการส่งไป Google Sheet', 'info');
+                    document.getElementById('teacherAssignmentForm').reset();
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    backToMenu();
+                })
+                .finally(() => {
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = originalText;
+                });
         }
 
         // Load records functions
