@@ -14,14 +14,13 @@
 
         // Firebase configuration - ต้องแทนที่ด้วยค่าจริงจาก Firebase Console
         const firebaseConfig = {
-  apiKey: "AIzaSyDX_N4v2WTCvfwRkgxGJJkOvli8V5X_BFo",
-  authDomain: "teaching-substitute-system.firebaseapp.com",
-  projectId: "teaching-substitute-system",
-  storageBucket: "teaching-substitute-system.firebasestorage.app",
-  messagingSenderId: "582118153938",
-  appId: "1:582118153938:web:31aa754bc721fd3b3f970b",
-  measurementId: "G-R4XVCFRR68"
-};
+            apiKey: "your-api-key-here",
+            authDomain: "your-project.firebaseapp.com",
+            projectId: "your-project-id",
+            storageBucket: "your-project.appspot.com",
+            messagingSenderId: "123456789",
+            appId: "your-app-id"
+        };
 
         // Initialize Firebase
         const app = initializeApp(firebaseConfig);
@@ -339,6 +338,7 @@
                     <div class="flex justify-between items-center mb-4">
                         <h3 class="text-lg font-semibold text-gray-800">รายการล่าสุด (Realtime Updates)</h3>
                         <div class="flex space-x-2">
+                            <button onclick="importCSVToFirebase()" class="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700">นำเข้า CSV</button>
                             <button onclick="exportToJSON()" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">ส่งออก JSON</button>
                             <button onclick="createTestRecord()" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">ข้อมูลทดสอบ</button>
                         </div>
@@ -850,6 +850,144 @@
             URL.revokeObjectURL(url);
             
             showNotification('ส่งออกข้อมูลเรียบร้อย', 'success');
+        }
+
+        // ฟังก์ชันนำเข้า CSV ไป Firebase
+        async function importCSVToFirebase() {
+            const csvData = prompt(`นำเข้าข้อมูลจาก Google Sheet:
+            
+ขั้นตอน:
+1. เปิด Google Sheet ของคุณ
+2. File > Download > Comma Separated Values (.csv)
+3. เปิดไฟล์ CSV ด้วย Notepad หรือ TextEdit
+4. คัดลอกข้อมูลทั้งหมด (รวม header)
+5. วางข้อมูลในช่องนี้:`);
+            
+            if (!csvData || !csvData.trim()) {
+                showNotification('ไม่พบข้อมูล CSV', 'error');
+                return;
+            }
+            
+            try {
+                updateSyncIndicator('syncing', 'กำลังนำเข้าข้อมูล...');
+                
+                const lines = csvData.trim().split('\n');
+                if (lines.length < 2) {
+                    throw new Error('ข้อมูล CSV ต้องมีอย่างน้อย 2 บรรทัด (header + data)');
+                }
+                
+                const headers = parseCSVLine(lines[0]);
+                console.log('Headers ที่พบ:', headers);
+                
+                // แมป headers ไทย-อังกฤษ
+                const headerMap = {
+                    'ID': 'id',
+                    'วันที่บันทึก': 'timestamp',
+                    'วันที่สอน': 'date',
+                    'เวลา': 'time',
+                    'ชั้น/ห้อง': 'classRoom',
+                    'วิชา': 'subject',
+                    'ครูประจำ': 'regularTeacher',
+                    'ครูสอนแทน': 'substituteTeacher',
+                    'เนื้อหา': 'content',
+                    'กิจกรรม': 'activities',
+                    'การบ้าน': 'homework',
+                    'สถานะ': 'status',
+                    'อนุมัติหัวหน้า': 'headApproval',
+                    'เหตุผลหัวหน้า': 'headReason',
+                    'อนุมัติรองฯ': 'adminApproval',
+                    'เหตุผลรองฯ': 'adminReason',
+                    'วันที่สร้าง': 'createdAt'
+                };
+                
+                let successCount = 0;
+                let errorCount = 0;
+                
+                // ประมวลผลทีละบรรทัด (ข้าม header)
+                for (let i = 1; i < lines.length; i++) {
+                    try {
+                        const cells = parseCSVLine(lines[i]);
+                        
+                        if (cells.length < 3) continue; // ข้ามบรรทัดที่ไม่มีข้อมูลพอ
+                        
+                        // แปลงเป็น object
+                        const record = {};
+                        headers.forEach((header, index) => {
+                            if (cells[index] && cells[index].trim()) {
+                                const mappedKey = headerMap[header] || header.toLowerCase().replace(/[^a-z0-9]/g, '');
+                                record[mappedKey] = cells[index].trim();
+                            }
+                        });
+                        
+                        // เพิ่มข้อมูลที่จำเป็น
+                        if (!record.id) {
+                            record.id = 'IMPORT_' + Date.now() + '_' + i;
+                        }
+                        
+                        record.importedAt = new Date();
+                        record.source = 'google_sheet_import';
+                        record.status = record.status || 'pending';
+                        
+                        // ตรวจสอบข้อมูลจำเป็น
+                        if (!record.subject || !record.date) {
+                            console.warn(`บรรทัดที่ ${i}: ข้าม - ไม่มีวิชาหรือวันที่`);
+                            continue;
+                        }
+                        
+                        // บันทึกลง Firebase
+                        await FirebaseDataManager.addRecord(record);
+                        successCount++;
+                        
+                        console.log(`นำเข้าสำเร็จ ${successCount}:`, record.subject);
+                        
+                        // หน่วงเวลาเล็กน้อยเพื่อไม่ให้ Firebase อาพ
+                        if (successCount % 5 === 0) {
+                            await new Promise(resolve => setTimeout(resolve, 100));
+                        }
+                        
+                    } catch (recordError) {
+                        console.error(`บรรทัดที่ ${i} ผิดพลาด:`, recordError);
+                        errorCount++;
+                    }
+                }
+                
+                updateSyncIndicator('success', 'นำเข้าเสร็จสิ้น');
+                
+                if (successCount > 0) {
+                    showNotification(`นำเข้าข้อมูลสำเร็จ ${successCount} รายการ` + 
+                                   (errorCount > 0 ? ` (ข้ามไป ${errorCount} รายการ)` : ''), 'success');
+                } else {
+                    showNotification('ไม่มีข้อมูลที่ถูกต้องให้นำเข้า', 'error');
+                }
+                
+            } catch (error) {
+                console.error('เกิดข้อผิดพลาดในการนำเข้า:', error);
+                updateSyncIndicator('error', 'นำเข้าล้มเหลว');
+                showNotification('เกิดข้อผิดพลาด: ' + error.message, 'error');
+            }
+        }
+
+        // ฟังก์ชันแปลง CSV แบบอัจฉริยะ (รองรับคอมม่าในข้อความ)
+        function parseCSVLine(line) {
+            const result = [];
+            let current = '';
+            let inQuotes = false;
+            
+            for (let i = 0; i < line.length; i++) {
+                const char = line[i];
+                
+                if (char === '"') {
+                    inQuotes = !inQuotes;
+                } else if (char === ',' && !inQuotes) {
+                    result.push(current.trim().replace(/^"|"$/g, ''));
+                    current = '';
+                } else {
+                    current += char;
+                }
+            }
+            
+            result.push(current.trim().replace(/^"|"$/g, ''));
+            return result;
         }
 
         // Event listeners and initialization
