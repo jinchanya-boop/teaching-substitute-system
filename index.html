@@ -910,17 +910,27 @@
                         
                         if (cells.length < 3) continue; // ข้ามบรรทัดที่ไม่มีข้อมูลพอ
                         
-                        // แปลงเป็น object
+                        // แปลงเป็น object และกรองข้อมูลที่มีค่า
                         const record = {};
                         headers.forEach((header, index) => {
-                            if (cells[index] && cells[index].trim()) {
+                            const cellValue = cells[index] ? cells[index].trim() : '';
+                            // ข้าม field ที่ว่างเปล่า หรือมีเครื่องหมาย #####
+                            if (cellValue && 
+                                cellValue !== '' && 
+                                !cellValue.includes('#####') &&
+                                !cellValue.includes('https://drive.google.com') &&
+                                cellValue !== 'undefined' &&
+                                cellValue !== 'null') {
+                                
                                 const mappedKey = headerMap[header] || header.toLowerCase().replace(/[^a-z0-9]/g, '');
-                                record[mappedKey] = cells[index].trim();
+                                if (mappedKey) {
+                                    record[mappedKey] = cellValue;
+                                }
                             }
                         });
                         
-                        // เพิ่มข้อมูลที่จำเป็น
-                        if (!record.id) {
+                        // เพิ่มข้อมูลที่จำเป็นและตรวจสอบความถูกต้อง
+                        if (!record.id || record.id === '') {
                             record.id = 'IMPORT_' + Date.now() + '_' + i;
                         }
                         
@@ -928,11 +938,19 @@
                         record.source = 'google_sheet_import';
                         record.status = record.status || 'pending';
                         
-                        // ตรวจสอบข้อมูลจำเป็น
-                        if (!record.subject || !record.date) {
-                            console.warn(`บรรทัดที่ ${i}: ข้าม - ไม่มีวิชาหรือวันที่`);
+                        // ตรวจสอบข้อมูลจำเป็น - ต้องมีอย่างน้อย subject
+                        if (!record.subject || record.subject === '') {
+                            console.warn(`บรรทัดที่ ${i}: ข้าม - ไม่มีวิชา`);
                             continue;
                         }
+                        
+                        // เพิ่มค่าเริ่มต้นสำหรับ field ที่จำเป็น
+                        if (!record.date) record.date = new Date().toISOString().split('T')[0];
+                        if (!record.time) record.time = 'ไม่ระบุ';
+                        if (!record.classRoom) record.classRoom = 'ไม่ระบุ';
+                        if (!record.regularTeacher) record.regularTeacher = 'ไม่ระบุ';
+                        if (!record.substituteTeacher) record.substituteTeacher = 'ไม่ระบุ';
+                        if (!record.content) record.content = 'ไม่ระบุ';
                         
                         // บันทึกลง Firebase
                         await FirebaseDataManager.addRecord(record);
