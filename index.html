@@ -300,9 +300,10 @@
                     <div class="flex justify-between items-center mb-4">
                         <h3 class="text-lg font-semibold text-gray-800">รายการล่าสุด</h3>
                         <div class="flex space-x-2">
-                            <button onclick="refreshDashboardData()" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">รีเฟรชข้อมูล</button>
-                            <button onclick="resetLocalData()" class="bg-orange-600 text-white px-4 py-2 rounded hover:bg-orange-700">ซิงค์ข้อมูลใหม่</button>
-                            <button onclick="createTestRecord()" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">สร้างข้อมูลทดสอบ</button>
+                            <button onclick="refreshDashboardData()" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">นำเข้าข้อมูล</button>
+                            <button onclick="exportToCSV()" class="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700">ส่งออก CSV</button>
+                            <button onclick="resetLocalData()" class="bg-orange-600 text-white px-4 py-2 rounded hover:bg-orange-700">ล้างข้อมูล</button>
+                            <button onclick="createTestRecord()" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">ข้อมูลทดสอบ</button>
                         </div>
                     </div>
                     <div id="recentRecords">ไม่มีข้อมูล</div>
@@ -325,60 +326,158 @@
             folderId: '1pfSdQHTZwY4VpPtpB7jyLQr4UNFdReEz'
         };
 
-        // ฟังก์ชันซิงค์ข้อมูลจาก Google Sheet
+        // ฟังก์ชันซิงค์ข้อมูลจาก Google Sheet แบบใหม่
         function syncWithGoogleSheet() {
-            if (!appConfig.scriptUrl) {
-                showNotification('ไม่สามารถซิงค์ข้อมูลได้ ไม่พบ Google Apps Script URL', 'error');
-                return Promise.resolve();
+            // เนื่องจากข้อจำกัดของ CORS จึงใช้วิธีอื่นในการซิงค์
+            showNotification('เนื่องจากข้อจำกัดของ Google Sheet API การซิงค์จะใช้วิธีทางเลือก', 'info');
+            
+            // แนะนำให้ผู้ใช้ป้อนข้อมูลจาก Google Sheet เอง
+            const shouldImport = confirm('ต้องการนำเข้าข้อมูลจาก Google Sheet ใหม่หรือไม่?\n\n' +
+                'หากต้องการ กรุณาคัดลอกข้อมูลจาก Google Sheet มาวางในกล่องข้อความต่อไป\n' +
+                'รูปแบบ: ID,วันที่,เวลา,ชั้น,วิชา,ครูประจำ,ครูสอนแทน,เนื้อหา,สถานะ');
+            
+            if (shouldImport) {
+                const csvData = prompt('วางข้อมูลจาก Google Sheet (รูปแบบ CSV):');
+                if (csvData) {
+                    try {
+                        importDataFromCSV(csvData);
+                        showNotification('นำเข้าข้อมูลสำเร็จ', 'success');
+                        loadDashboardData();
+                    } catch (error) {
+                        showNotification('เกิดข้อผิดพลาดในการนำเข้าข้อมูล: ' + error.message, 'error');
+                    }
+                }
             }
+            
+            return Promise.resolve({ success: true });
+        }
 
-            const payload = {
-                action: 'getRecords',
-                sheetId: appConfig.sheetId,
-                timestamp: new Date().toISOString()
-            };
+        // ฟังก์ชันนำเข้าข้อมูลจาก CSV
+        function importDataFromCSV(csvData) {
+            const lines = csvData.trim().split('\n');
+            const newRecords = [];
+            
+            // ข้ามบรรทัดแรก (header)
+            for (let i = 1; i < lines.length; i++) {
+                const cells = lines[i].split(',');
+                if (cells.length >= 9) {
+                    const record = {
+                        id: cells[0].trim(),
+                        timestamp: cells[1].trim(),
+                        date: cells[2].trim(),
+                        time: cells[3].trim(),
+                        classRoom: cells[4].trim(),
+                        subject: cells[5].trim(),
+                        regularTeacher: cells[6].trim(),
+                        substituteTeacher: cells[7].trim(),
+                        content: cells[8].trim(),
+                        activities: cells[9] ? cells[9].trim() : '',
+                        homework: cells[10] ? cells[10].trim() : '',
+                        status: cells[13] ? cells[13].trim() : 'pending',
+                        headApproval: cells[14] ? cells[14].trim() : '',
+                        headReason: cells[15] ? cells[15].trim() : '',
+                        adminApproval: cells[16] ? cells[16].trim() : '',
+                        adminReason: cells[17] ? cells[17].trim() : '',
+                        createdAt: cells[18] ? cells[18].trim() : new Date().toLocaleString('th-TH')
+                    };
+                    
+                    // เพิ่ม substituteReport ถ้ามีข้อมูล
+                    if (cells.length > 23 && cells[23]) {
+                        record.substituteReport = {
+                            attendance: cells[23].trim(),
+                            behavior: cells[24] ? cells[24].trim() : '',
+                            observations: cells[25] ? cells[25].trim() : '',
+                            submittedAt: cells[26] ? cells[26].trim() : ''
+                        };
+                    }
+                    
+                    newRecords.push(record);
+                }
+            }
+            
+            // แทนที่ข้อมูลเก่าด้วยข้อมูลใหม่
+            records = newRecords;
+            localStorage.setItem('teachingRecords', JSON.stringify(records));
+        }
 
-            showNotification('กำลังซิงค์ข้อมูลจาก Google Sheet...', 'info');
-
-            return fetch(appConfig.scriptUrl, {
-                method: 'POST',
-                mode: 'no-cors',
-                headers: {
-                    'Content-Type': 'text/plain',
-                },
-                body: JSON.stringify(payload)
-            })
-            .then(() => {
-                // เนื่องจากใช้ no-cors จึงไม่สามารถอ่านผลลัพธ์ได้
-                // แต่เราสามารถใช้วิธีอื่นในการซิงค์ข้อมูล
-                showNotification('ซิงค์ข้อมูลเสร็จสิ้น', 'success');
-                console.log('ส่งคำขอซิงค์ข้อมูลสำเร็จ');
-                return { success: true };
-            })
-            .catch(error => {
-                console.error('ซิงค์ข้อมูลล้มเหลว:', error);
-                showNotification('ไม่สามารถซิงค์ข้อมูลได้', 'error');
-                return { success: false, error: error };
+        // ฟังก์ชันส่งออกข้อมูลเป็น CSV
+        function exportToCSV() {
+            if (records.length === 0) {
+                showNotification('ไม่มีข้อมูลให้ส่งออก', 'error');
+                return;
+            }
+            
+            const headers = [
+                'ID', 'วันที่บันทึก', 'วันที่สอน', 'เวลา', 'ชั้น/ห้อง', 'วิชา',
+                'ครูประจำ', 'ครูสอนแทน', 'เนื้อหา', 'กิจกรรม', 'การบ้าน',
+                'จำนวนไฟล์', 'รายการไฟล์', 'สถานะ', 'อนุมัติหัวหน้า', 'เหตุผลหัวหน้า',
+                'อนุมัติรองฯ', 'เหตุผลรองฯ', 'วันที่สร้าง', 'ลายเซ็นครูมอบหมาย',
+                'ลายเซ็นหัวหน้า', 'ลายเซ็นรองฯ', 'โฟลเดอร์ไฟล์',
+                'การเข้าเรียน', 'พฤติกรรม', 'ข้อสังเกต', 'วันที่ส่งรายงาน'
+            ];
+            
+            const csvContent = [headers.join(',')];
+            
+            records.forEach(record => {
+                const row = [
+                    record.id || '',
+                    record.timestamp || '',
+                    record.date || '',
+                    record.time || '',
+                    record.classRoom || '',
+                    record.subject || '',
+                    record.regularTeacher || '',
+                    record.substituteTeacher || '',
+                    record.content || '',
+                    record.activities || '',
+                    record.homework || '',
+                    '0',
+                    '',
+                    record.status || 'pending',
+                    record.headApproval || '',
+                    record.headReason || '',
+                    record.adminApproval || '',
+                    record.adminReason || '',
+                    record.createdAt || '',
+                    record.teacherSignature ? 'มีลายเซ็น' : '',
+                    record.headSignature ? 'มีลายเซ็น' : '',
+                    record.adminSignature ? 'มีลายเซ็น' : '',
+                    '',
+                    record.substituteReport ? record.substituteReport.attendance : '',
+                    record.substituteReport ? record.substituteReport.behavior : '',
+                    record.substituteReport ? record.substituteReport.observations : '',
+                    record.substituteReport ? record.substituteReport.submittedAt : ''
+                ];
+                
+                csvContent.push(row.join(','));
             });
+            
+            const blob = new Blob([csvContent.join('\n')], { type: 'text/csv;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = 'teaching-records-' + new Date().toISOString().split('T')[0] + '.csv';
+            link.click();
+            URL.revokeObjectURL(url);
+            
+            showNotification('ส่งออกข้อมูลเรียบร้อย', 'success');
         }
 
         // ฟังก์ชันรีเฟรชข้อมูลในแดชบอร์ด
         function refreshDashboardData() {
-            // ซิงค์ข้อมูลจาก Google Sheet ก่อน
+            // แสดงหน้าต่างการซิงค์
             syncWithGoogleSheet().then(() => {
-                // หลังจากซิงค์แล้ว ให้อัพเดทข้อมูลในแดชบอร์ด
                 loadDashboardData();
-                showNotification('รีเฟรชข้อมูลแดชบอร์ดเรียบร้อย', 'success');
             });
         }
 
-        // ฟังก์ชันล้างข้อมูลใน localStorage และซิงค์ใหม่
+        // ฟังก์ชันล้างข้อมูลใน localStorage
         function resetLocalData() {
-            if (confirm('คุณต้องการล้างข้อมูลทั้งหมดใน localStorage และซิงค์ข้อมูลใหม่จาก Google Sheet หรือไม่?')) {
+            if (confirm('คุณต้องการล้างข้อมูลทั้งหมดใน localStorage หรือไม่?\n\nข้อมูลจะถูกลบถาวร หากต้องการกู้คืนจะต้องนำเข้าจาก Google Sheet ใหม่')) {
                 localStorage.removeItem('teachingRecords');
                 records = [];
+                loadDashboardData();
                 showNotification('ล้างข้อมูล localStorage เรียบร้อย', 'info');
-                refreshDashboardData();
             }
         }
         function sendToGoogleSheet(data, action = 'addRecord', additionalData = {}) {
