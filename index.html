@@ -14,14 +14,13 @@
 
         // Firebase configuration - ต้องแทนที่ด้วยค่าจริงจาก Firebase Console
         const firebaseConfig = {
-  apiKey: "AIzaSyDX_N4v2WTCvfwRkgxGJJkOvli8V5X_BFo",
-  authDomain: "teaching-substitute-system.firebaseapp.com",
-  projectId: "teaching-substitute-system",
-  storageBucket: "teaching-substitute-system.firebasestorage.app",
-  messagingSenderId: "582118153938",
-  appId: "1:582118153938:web:31aa754bc721fd3b3f970b",
-  measurementId: "G-R4XVCFRR68"
-};
+            apiKey: "your-api-key-here",
+            authDomain: "your-project.firebaseapp.com",
+            projectId: "your-project-id",
+            storageBucket: "your-project.appspot.com",
+            messagingSenderId: "123456789",
+            appId: "your-app-id"
+        };
 
         // Initialize Firebase
         const app = initializeApp(firebaseConfig);
@@ -288,7 +287,32 @@
             </div>
         </div>
 
-        <!-- Dashboard -->
+        <!-- Head Form -->
+        <div id="headForm" class="hidden">
+            <div class="bg-white rounded-xl shadow-lg p-8">
+                <h2 class="text-2xl font-bold text-gray-800 mb-6">หัวหน้าสาระ - พิจารณาอนุมัติ</h2>
+                <div id="headRecordsList">กำลังโหลดข้อมูล...</div>
+                <button onclick="backToMenu()" class="mt-4 bg-gray-500 hover:bg-gray-600 text-white px-6 py-2 rounded-lg">กลับ</button>
+            </div>
+        </div>
+
+        <!-- Substitute Form -->
+        <div id="substituteForm" class="hidden">
+            <div class="bg-white rounded-xl shadow-lg p-8">
+                <h2 class="text-2xl font-bold text-gray-800 mb-6">ครูสอนแทน - บันทึกผลการสอน</h2>
+                <div id="substituteRecordsList">กำลังโหลดข้อมูล...</div>
+                <button onclick="backToMenu()" class="mt-4 bg-gray-500 hover:bg-gray-600 text-white px-6 py-2 rounded-lg">กลับ</button>
+            </div>
+        </div>
+
+        <!-- Admin Form -->
+        <div id="adminForm" class="hidden">
+            <div class="bg-white rounded-xl shadow-lg p-8">
+                <h2 class="text-2xl font-bold text-gray-800 mb-6">รองกลุ่มบริหาร - อนุมัติสุดท้าย</h2>
+                <div id="adminRecordsList">กำลังโหลดข้อมูล...</div>
+                <button onclick="backToMenu()" class="mt-4 bg-gray-500 hover:bg-gray-600 text-white px-6 py-2 rounded-lg">กลับ</button>
+            </div>
+        </div>
         <div id="dashboard" class="hidden">
             <div class="bg-white rounded-xl shadow-lg p-8">
                 <h2 class="text-2xl font-bold text-gray-800 mb-6">แดชบอร์ด (Firebase Realtime)</h2>
@@ -341,6 +365,7 @@
                         <div class="flex space-x-2">
                             <button onclick="importCSVToFirebase()" class="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700">นำเข้า CSV</button>
                             <button onclick="exportToJSON()" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">ส่งออก JSON</button>
+                            <button onclick="deleteAllRecords()" class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700">ลบข้อมูลทั้งหมด</button>
                             <button onclick="createTestRecord()" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">ข้อมูลทดสอบ</button>
                         </div>
                     </div>
@@ -541,6 +566,13 @@
             document.getElementById('passwordField').classList.add('hidden');
         }
 
+        function showDashboard() {
+            showSection('dashboard');
+            if (!recordsListener) {
+                FirebaseDataManager.startRealtimeListener();
+            }
+        }
+
         function login() {
             const userType = document.getElementById('userType').value;
             const password = document.getElementById('password').value;
@@ -576,7 +608,354 @@
             
             switch(userType) {
                 case 'teacher': showTeacherForm(); break;
+                case 'head': showHeadForm(); break;
+                case 'substitute': showSubstituteForm(); break;
+                case 'admin': showAdminForm(); break;
                 default: showDashboard(); break;
+            }
+        }
+        function loadHeadRecords() {
+            const container = document.getElementById('headRecordsList');
+            const pendingRecords = records.filter(record => 
+                record.status === 'pending' && 
+                !record.headApproval
+            );
+            
+            if (pendingRecords.length === 0) {
+                container.innerHTML = '<p class="text-gray-600">ไม่มีรายการที่รออนุมัติ</p>';
+                return;
+            }
+            
+            let html = '';
+            pendingRecords.forEach(record => {
+                html += `
+                    <div class="record-card status-pending mb-6">
+                        <h4 class="font-semibold text-gray-800 mb-2">วิชา: ${record.subject || 'ไม่ระบุ'}</h4>
+                        <p class="mb-2"><strong>ชั้น/ห้อง:</strong> ${record.classRoom || 'ไม่ระบุ'} | <strong>วันที่:</strong> ${record.date || 'ไม่ระบุ'}</p>
+                        <p class="mb-2"><strong>ครูประจำ:</strong> ${record.regularTeacher || 'ไม่ระบุ'} | <strong>ครูสอนแทน:</strong> ${record.substituteTeacher || 'ไม่ระบุ'}</p>
+                        <p class="mb-3"><strong>เนื้อหา:</strong> ${record.content || 'ไม่ระบุ'}</p>
+                        
+                        <div class="mt-4 border-t pt-4">
+                            <h5 class="font-medium text-gray-700 mb-2">ลายเซ็นหัวหน้าสาระ</h5>
+                            <canvas id="headSignature_${record.id}" width="400" height="120" class="signature-pad w-full bg-white rounded border-2 border-green-300 mb-2"></canvas>
+                            <div class="flex space-x-2 mb-4">
+                                <button onclick="clearSignature('headSignature_${record.id}')" class="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600">ลบลายเซ็น</button>
+                            </div>
+                            <div class="flex space-x-2">
+                                <button onclick="approveRecord('${record.id}')" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">อนุมัติ</button>
+                                <button onclick="rejectRecord('${record.id}')" class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700">ไม่อนุมัติ</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            container.innerHTML = html;
+            
+            // Initialize signature pads
+            setTimeout(() => {
+                pendingRecords.forEach(record => {
+                    initSignaturePad('headSignature_' + record.id);
+                });
+            }, 100);
+        }
+
+        function loadSubstituteRecords() {
+            const container = document.getElementById('substituteRecordsList');
+            
+            let filteredRecords = records.filter(record => 
+                record.headApproval === 'approved' && 
+                !record.substituteReport
+            );
+            
+            // Filter by teacher name if logged in as substitute
+            if (currentUser && typeof currentUser === 'object' && currentUser.type === 'substitute') {
+                const currentTeacherName = currentUser.name;
+                filteredRecords = filteredRecords.filter(record => 
+                    record.substituteTeacher && 
+                    record.substituteTeacher.toLowerCase().includes(currentTeacherName.toLowerCase())
+                );
+            }
+            
+            if (filteredRecords.length === 0) {
+                const message = currentUser && typeof currentUser === 'object' && currentUser.type === 'substitute' 
+                    ? `ไม่มีงานสอนแทนที่มอบหมายให้ "${currentUser.name}"`
+                    : 'ไม่มีรายการที่ต้องบันทึกผลการสอน';
+                container.innerHTML = `<p class="text-gray-600">${message}</p>`;
+                return;
+            }
+            
+            let html = '';
+            filteredRecords.forEach(record => {
+                html += `
+                    <div class="record-card status-approved mb-4">
+                        <h4 class="font-semibold text-gray-800 mb-2">วิชา: ${record.subject || 'ไม่ระบุ'}</h4>
+                        <p class="mb-2"><strong>ชั้น/ห้อง:</strong> ${record.classRoom || 'ไม่ระบุ'} | <strong>วันที่:</strong> ${record.date || 'ไม่ระบุ'}</p>
+                        <p class="mb-2"><strong>ครูประจำ:</strong> ${record.regularTeacher || 'ไม่ระบุ'} | <strong>ครูสอนแทน:</strong> ${record.substituteTeacher || 'ไม่ระบุ'}</p>
+                        <p class="mb-3"><strong>เนื้อหา:</strong> ${record.content || 'ไม่ระบุ'}</p>
+                        
+                        <div class="mt-4 border-t pt-4">
+                            <button onclick="showSubstituteReportForm('${record.id}')" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">บันทึกผลการสอน</button>
+                        </div>
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
+        }
+
+        function loadAdminRecords() {
+            const container = document.getElementById('adminRecordsList');
+            const readyRecords = records.filter(record => 
+                record.headApproval === 'approved' && 
+                record.substituteReport && 
+                !record.adminApproval
+            );
+            
+            if (readyRecords.length === 0) {
+                container.innerHTML = '<p class="text-gray-600">ไม่มีรายการที่รอการอนุมัติขั้นสุดท้าย</p>';
+                return;
+            }
+            
+            let html = '';
+            readyRecords.forEach(record => {
+                html += `
+                    <div class="record-card status-pending mb-6">
+                        <h4 class="font-semibold text-gray-800 mb-2">วิชา: ${record.subject || 'ไม่ระบุ'}</h4>
+                        <p class="mb-2"><strong>ชั้น/ห้อง:</strong> ${record.classRoom || 'ไม่ระบุ'} | <strong>วันที่:</strong> ${record.date || 'ไม่ระบุ'}</p>
+                        <p class="mb-2"><strong>ครูประจำ:</strong> ${record.regularTeacher || 'ไม่ระบุ'} | <strong>ครูสอนแทน:</strong> ${record.substituteTeacher || 'ไม่ระบุ'}</p>
+                        <p class="mb-3"><strong>เนื้อหา:</strong> ${record.content || 'ไม่ระบุ'}</p>
+                        
+                        <div class="mt-3 p-3 bg-blue-50 rounded">
+                            <h6 class="font-medium text-blue-800 mb-2">รายงานจากครูสอนแทน</h6>
+                            <p class="text-sm"><strong>จำนวนนักเรียน:</strong> ${record.substituteReport?.attendance || 'ไม่ระบุ'}</p>
+                            <p class="text-sm"><strong>พฤติกรรม:</strong> ${record.substituteReport?.behavior || 'ไม่ระบุ'}</p>
+                            ${record.substituteReport?.observations ? `<p class="text-sm"><strong>ข้อสังเกต:</strong> ${record.substituteReport.observations}</p>` : ''}
+                        </div>
+                        
+                        <div class="mt-4 border-t pt-4">
+                            <h5 class="font-medium text-purple-700 mb-2">เหตุผลในการพิจารณา</h5>
+                            <textarea id="adminReason_${record.id}" rows="3" placeholder="ระบุเหตุผลในการอนุมัติหรือไม่อนุมัติ" class="w-full border-2 border-purple-300 rounded-lg px-4 py-2 mb-3"></textarea>
+                            
+                            <h5 class="font-medium text-purple-700 mb-2">ลายเซ็นรองผู้อำนวยการ</h5>
+                            <canvas id="adminSignature_${record.id}" width="400" height="120" class="signature-pad w-full bg-white rounded border-2 border-purple-300 mb-2"></canvas>
+                            <div class="flex space-x-2 mb-4">
+                                <button onclick="clearSignature('adminSignature_${record.id}')" class="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600">ลบลายเซ็น</button>
+                            </div>
+                            <div class="flex space-x-2">
+                                <button onclick="finalApprove('${record.id}')" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">อนุมัติขั้นสุดท้าย</button>
+                                <button onclick="finalReject('${record.id}')" class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700">ไม่อนุมัติ</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            container.innerHTML = html;
+            
+            // Initialize signature pads
+            setTimeout(() => {
+                readyRecords.forEach(record => {
+                    initSignaturePad('adminSignature_' + record.id);
+                });
+            }, 100);
+        }
+
+        // Record action functions
+        async function approveRecord(recordId) {
+            const canvas = document.getElementById('headSignature_' + recordId);
+            const ctx = canvas.getContext('2d');
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            let hasSignature = false;
+            
+            for (let i = 0; i < imageData.data.length; i += 4) {
+                if (imageData.data[i + 3] > 0) {
+                    hasSignature = true;
+                    break;
+                }
+            }
+            
+            if (!hasSignature) {
+                showNotification('กรุณาเซ็นลายเซ็นก่อนอนุมัติ', 'error');
+                return;
+            }
+
+            try {
+                updateSyncIndicator('syncing', 'กำลังอนุมัติ...');
+                
+                const updateData = {
+                    headApproval: 'approved',
+                    headReason: 'อนุมัติโดยหัวหน้าสาระ',
+                    status: 'head_approved',
+                    headApprovedAt: new Date(),
+                    headSignature: canvas.toDataURL()
+                };
+
+                await FirebaseDataManager.updateRecord(recordId, updateData);
+                
+                showNotification('อนุมัติรายการเรียบร้อย', 'success');
+                loadHeadRecords();
+                
+            } catch (error) {
+                console.error('เกิดข้อผิดพลาดในการอนุมัติ:', error);
+                showNotification('เกิดข้อผิดพลาดในการอนุมัติ: ' + error.message, 'error');
+            }
+        }
+
+        async function rejectRecord(recordId) {
+            const reason = prompt('เหตุผลที่ไม่อนุมัติ:');
+            if (!reason) return;
+            
+            try {
+                updateSyncIndicator('syncing', 'กำลังไม่อนุมัติ...');
+                
+                const updateData = {
+                    headApproval: 'rejected',
+                    headReason: reason,
+                    status: 'rejected',
+                    headRejectedAt: new Date()
+                };
+
+                await FirebaseDataManager.updateRecord(recordId, updateData);
+                
+                showNotification('ไม่อนุมัติรายการเรียบร้อย', 'success');
+                loadHeadRecords();
+                
+            } catch (error) {
+                console.error('เกิดข้อผิดพลาดในการไม่อนุมัติ:', error);
+                showNotification('เกิดข้อผิดพลาด: ' + error.message, 'error');
+            }
+        }
+
+        function showSubstituteReportForm(recordId) {
+            const attendance = prompt('จำนวนนักเรียนที่เข้าเรียน:');
+            if (!attendance) return;
+            
+            const behavior = prompt('พฤติกรรมของนักเรียน:');
+            if (!behavior) return;
+            
+            const observations = prompt('ข้อสังเกตเพิ่มเติม (ถ้ามี):') || '';
+            
+            submitSubstituteReport(recordId, {
+                attendance: attendance.trim(),
+                behavior: behavior.trim(),
+                observations: observations.trim(),
+                submittedAt: new Date()
+            });
+        }
+
+        async function submitSubstituteReport(recordId, reportData) {
+            try {
+                updateSyncIndicator('syncing', 'กำลังบันทึกผล...');
+                
+                const updateData = {
+                    substituteReport: reportData,
+                    status: 'substitute_reported'
+                };
+
+                await FirebaseDataManager.updateRecord(recordId, updateData);
+                
+                showNotification('บันทึกผลการสอนเรียบร้อย', 'success');
+                loadSubstituteRecords();
+                
+            } catch (error) {
+                console.error('เกิดข้อผิดพลาดในการบันทึกผล:', error);
+                showNotification('เกิดข้อผิดพลาด: ' + error.message, 'error');
+            }
+        }
+
+        async function finalApprove(recordId) {
+            const reasonTextarea = document.getElementById('adminReason_' + recordId);
+            const canvas = document.getElementById('adminSignature_' + recordId);
+            
+            const reason = reasonTextarea.value.trim();
+            if (!reason || reason.length < 10) {
+                showNotification('กรุณาระบุเหตุผลอย่างน้อย 10 ตัวอักษร', 'error');
+                return;
+            }
+
+            const ctx = canvas.getContext('2d');
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            let hasSignature = false;
+            
+            for (let i = 0; i < imageData.data.length; i += 4) {
+                if (imageData.data[i + 3] > 0) {
+                    hasSignature = true;
+                    break;
+                }
+            }
+            
+            if (!hasSignature) {
+                showNotification('กรุณาเซ็นลายเซ็นก่อนอนุมัติ', 'error');
+                return;
+            }
+
+            try {
+                updateSyncIndicator('syncing', 'กำลังอนุมัติขั้นสุดท้าย...');
+                
+                const updateData = {
+                    adminApproval: 'approved',
+                    adminReason: reason,
+                    adminSignature: canvas.toDataURL(),
+                    status: 'completed',
+                    finalApprovalDate: new Date()
+                };
+
+                await FirebaseDataManager.updateRecord(recordId, updateData);
+                
+                showNotification('อนุมัติขั้นสุดท้ายเรียบร้อย', 'success');
+                loadAdminRecords();
+                
+            } catch (error) {
+                console.error('เกิดข้อผิดพลาดในการอนุมัติขั้นสุดท้าย:', error);
+                showNotification('เกิดข้อผิดพลาด: ' + error.message, 'error');
+            }
+        }
+
+        async function finalReject(recordId) {
+            const reasonTextarea = document.getElementById('adminReason_' + recordId);
+            const canvas = document.getElementById('adminSignature_' + recordId);
+            
+            const reason = reasonTextarea.value.trim();
+            if (!reason || reason.length < 10) {
+                showNotification('กรุณาระบุเหตุผลอย่างน้อย 10 ตัวอักษร', 'error');
+                return;
+            }
+
+            const ctx = canvas.getContext('2d');
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            let hasSignature = false;
+            
+            for (let i = 0; i < imageData.data.length; i += 4) {
+                if (imageData.data[i + 3] > 0) {
+                    hasSignature = true;
+                    break;
+                }
+            }
+            
+            if (!hasSignature) {
+                showNotification('กรุณาเซ็นลายเซ็นก่อนไม่อนุมัติ', 'error');
+                return;
+            }
+
+            try {
+                updateSyncIndicator('syncing', 'กำลังไม่อนุมัติ...');
+                
+                const updateData = {
+                    adminApproval: 'rejected',
+                    adminReason: reason,
+                    adminSignature: canvas.toDataURL(),
+                    status: 'rejected',
+                    finalRejectionDate: new Date()
+                };
+
+                await FirebaseDataManager.updateRecord(recordId, updateData);
+                
+                showNotification('บันทึกการไม่อนุมัติเรียบร้อย', 'success');
+                loadAdminRecords();
+                
+            } catch (error) {
+                console.error('เกิดข้อผิดพลาดในการไม่อนุมัติ:', error);
+                showNotification('เกิดข้อผิดพลาด: ' + error.message, 'error');
             }
         }
 
@@ -586,11 +965,34 @@
             setTimeout(() => initSignaturePad('teacherSignaturePad'), 100);
         }
 
-        function showDashboard() {
-            showSection('dashboard');
-            if (!recordsListener) {
-                FirebaseDataManager.startRealtimeListener();
+        function showHeadForm() {
+            if (currentUser !== 'head') {
+                showNotification('กรุณาเข้าสู่ระบบด้วยบัญชีหัวหน้าสาระ', 'error');
+                showLogin();
+                return;
             }
+            loadHeadRecords();
+            showSection('headForm');
+        }
+
+        function showSubstituteForm() {
+            if (!currentUser || (typeof currentUser === 'object' && currentUser.type !== 'substitute')) {
+                showNotification('กรุณาเข้าสู่ระบบด้วยบัญชีครูสอนแทน', 'error');
+                showLogin();
+                return;
+            }
+            loadSubstituteRecords();
+            showSection('substituteForm');
+        }
+
+        function showAdminForm() {
+            if (currentUser !== 'admin') {
+                showNotification('กรุณาเข้าสู่ระบบด้วยบัญชีรองกลุ่มบริหาร', 'error');
+                showLogin();
+                return;
+            }
+            loadAdminRecords();
+            showSection('adminForm');
         }
 
         // Signature pad
@@ -1009,6 +1411,20 @@
             return result;
         }
 
+        // Import missing deleteDoc function
+        async function deleteDoc(docRef) {
+            try {
+                const { deleteDoc } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js');
+                return await deleteDoc(docRef);
+            } catch (error) {
+                console.error('Error importing deleteDoc:', error);
+                throw error;
+            }
+        }
+
+        // Add deleteDoc to Firebase object
+        window.firebase.deleteDoc = deleteDoc;
+
         // Event listeners and initialization
         document.addEventListener('DOMContentLoaded', function() {
             // User type change handler
@@ -1047,4 +1463,3 @@
     </script>
 </body>
 </html>
-
