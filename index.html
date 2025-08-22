@@ -403,8 +403,8 @@
             }
         }
 
-        // Enhanced Google Sheet sync function
-        async function syncWithGoogleSheet() {
+        // Enhanced Google Sheet sync function with auto-load
+        async function syncWithGoogleSheet(autoLoadData = false) {
             if (!appConfig.scriptUrl) {
                 showNotification('ไม่ได้กำหนด Google Apps Script URL', 'error');
                 return false;
@@ -429,6 +429,12 @@
                 updateSyncIndicator('online', 'เชื่อมต่อสำเร็จ');
                 syncStatus = 'online';
                 
+                // Auto-load data if requested and no local data exists
+                if (autoLoadData && records.length === 0) {
+                    console.log('ไม่มีข้อมูลในเครื่อง กำลังโหลดจาก Google Sheet...');
+                    await importFromGoogleSheet();
+                }
+                
                 showNotification('เชื่อมต่อ Google Sheet สำเร็จ', 'success');
                 return true;
                 
@@ -441,39 +447,58 @@
             }
         }
 
-        // Import data from Google Sheet using CSV
-        async function importFromGoogleSheet() {
+        // Import data from Google Sheet using CSV with auto-retry
+        async function importFromGoogleSheet(isAutoLoad = false) {
             const csvUrl = `https://docs.google.com/spreadsheets/d/${appConfig.sheetId}/export?format=csv&gid=0`;
             
             updateSyncIndicator('syncing', 'กำลังนำเข้าข้อมูล...');
             
-            try {
-                // Try to fetch using CORS proxy
-                const proxyUrl = 'https://cors-anywhere.herokuapp.com/';
-                const response = await fetch(proxyUrl + csvUrl);
-                
-                if (response.ok) {
-                    const csvData = await response.text();
-                    importDataFromCSV(csvData);
-                    updateSyncIndicator('online', 'นำเข้าสำเร็จ');
-                    showNotification('นำเข้าข้อมูลจาก Google Sheet สำเร็จ', 'success');
-                    loadDashboardData();
-                } else {
-                    throw new Error('Response not ok');
+            // Try multiple methods
+            const methods = [
+                // Method 1: Direct fetch (works on same domain)
+                () => fetch(csvUrl),
+                // Method 2: CORS proxy
+                () => fetch('https://cors-anywhere.herokuapp.com/' + csvUrl),
+                // Method 3: Alternative CORS proxy
+                () => fetch('https://api.allorigins.win/raw?url=' + encodeURIComponent(csvUrl))
+            ];
+            
+            for (let i = 0; i < methods.length; i++) {
+                try {
+                    console.log(`ลองวิธีที่ ${i + 1} ในการดึงข้อมูล...`);
+                    const response = await methods[i]();
+                    
+                    if (response.ok) {
+                        const csvData = await response.text();
+                        
+                        if (csvData && csvData.trim() && !csvData.includes('Error')) {
+                            importDataFromCSV(csvData);
+                            updateSyncIndicator('online', 'นำเข้าสำเร็จ');
+                            showNotification(`นำเข้าข้อมูลจาก Google Sheet สำเร็จ (วิธีที่ ${i + 1})`, 'success');
+                            loadDashboardData();
+                            return true;
+                        }
+                    }
+                } catch (error) {
+                    console.warn(`วิธีที่ ${i + 1} ล้มเหลว:`, error);
+                    continue;
                 }
-                
-            } catch (error) {
-                console.warn('ไม่สามารถใช้ CORS proxy ได้:', error);
-                updateSyncIndicator('error', 'นำเข้าล้มเหลว');
-                
-                // Fallback to manual import
+            }
+            
+            // All methods failed
+            console.warn('ทุกวิธีในการดึงข้อมูลล้มเหลว');
+            updateSyncIndicator('error', 'นำเข้าล้มเหลว');
+            
+            // Only show manual import dialog if not auto-loading
+            if (!isAutoLoad) {
                 const shouldImport = confirm(
                     'ไม่สามารถนำเข้าข้อมูลอัตโนมัติได้\n\n' +
                     'คุณต้องการนำเข้าข้อมูลด้วยตนเองหรือไม่?\n\n' +
-                    '1. เปิด Google Sheet\n' +
-                    '2. เลือก File > Download > CSV\n' +
-                    '3. คัดลอกข้อมูลจากไฟล์ CSV\n' +
-                    '4. วางในกล่องข้อความถัดไป'
+                    '1. เปิด Google Sheet ในเบราว์เซอร์\n' +
+                    '2. เลือก File > Download > Comma Separated Values (.csv)\n' +
+                    '3. เปิดไฟล์ CSV ด้วย Notepad\n' +
+                    '4. คัดลอกข้อมูลทั้งหมด\n' +
+                    '5. วางในกล่องข้อความถัดไป'
                 );
                 
                 if (shouldImport) {
@@ -484,15 +509,19 @@
                             updateSyncIndicator('online', 'นำเข้าสำเร็จ');
                             showNotification('นำเข้าข้อมูลด้วยตนเองสำเร็จ', 'success');
                             loadDashboardData();
+                            return true;
                         } catch (importError) {
                             updateSyncIndicator('error', 'นำเข้าล้มเหลว');
                             showNotification('เกิดข้อผิดพลาดในการนำเข้าข้อมูล: ' + importError.message, 'error');
                         }
                     }
-                } else {
-                    updateSyncIndicator('offline', 'ใช้งานออฟไลน์');
                 }
+            } else {
+                updateSyncIndicator('offline', 'ใช้งานออฟไลน์');
+                console.log('โหลดข้อมูลอัตโนมัติล้มเหลว - ใช้งานในโหมดออฟไลน์');
             }
+            
+            return false;
         }
 
         // Enhanced CSV import function
@@ -1696,20 +1725,31 @@
             // Initialize sync status
             updateSyncIndicator('offline', 'ออฟไลน์');
             
-            // Check connection on startup
-            syncWithGoogleSheet();
+            // Check connection on startup and auto-load data if needed
+            syncWithGoogleSheet(true);
 
             // Initialize
             showSection('menuSection');
             console.log('ระบบเริ่มต้นเรียบร้อย โหลดข้อมูล:', records.length, 'รายการ');
         });
 
-        // Auto-sync every 30 seconds when online
+        // Auto-sync and auto-load every 30 seconds when online
         setInterval(() => {
             if (syncStatus === 'online') {
-                syncWithGoogleSheet();
+                // Only sync, don't auto-load repeatedly
+                syncWithGoogleSheet(false);
             }
         }, 30000);
+
+        // Auto-load data when switching to dashboard if no data exists
+        function showDashboard() {
+            // If no data exists, try to load from Google Sheet
+            if (records.length === 0 && syncStatus === 'online') {
+                importFromGoogleSheet(true);
+            }
+            loadDashboardData();
+            showSection('dashboard');
+        }
     </script>
 </body>
 </html>
