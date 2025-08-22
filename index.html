@@ -16,13 +16,6 @@
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
             touch-action: none;
         }
-        .signature-pad:hover {
-            border-color: #1d4ed8;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
-        }
-        .signature-pad.drawing {
-            border-color: #10b981;
-        }
         .notification {
             position: fixed;
             top: 20px;
@@ -35,33 +28,10 @@
             transform: translateX(100%);
             transition: transform 0.3s ease-in-out;
         }
-        .notification.show {
-            transform: translateX(0);
-        }
-        .notification.success {
-            background-color: #10b981;
-            color: white;
-        }
-        .notification.error {
-            background-color: #ef4444;
-            color: white;
-        }
-        .notification.info {
-            background-color: #3b82f6;
-            color: white;
-        }
-        .loading {
-            display: inline-block;
-            width: 20px;
-            height: 20px;
-            border: 3px solid rgba(255,255,255,.3);
-            border-radius: 50%;
-            border-top-color: #fff;
-            animation: spin 1s ease-in-out infinite;
-        }
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
+        .notification.show { transform: translateX(0); }
+        .notification.success { background-color: #10b981; color: white; }
+        .notification.error { background-color: #ef4444; color: white; }
+        .notification.info { background-color: #3b82f6; color: white; }
         .record-card {
             border: 1px solid #e5e7eb;
             border-radius: 8px;
@@ -88,15 +58,8 @@
                     </div>
                 </div>
                 <div class="flex space-x-2">
-                    <button onclick="showLogin()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors">
-                        เข้าสู่ระบบ
-                    </button>
-                    <button onclick="showDashboard()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors">
-                        แดชบอร์ด
-                    </button>
-                    <button onclick="showSettings()" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg transition-colors">
-                        ตั้งค่า
-                    </button>
+                    <button onclick="showLogin()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg">เข้าสู่ระบบ</button>
+                    <button onclick="showDashboard()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg">แดชบอร์ด</button>
                 </div>
             </div>
         </div>
@@ -104,7 +67,7 @@
 
     <!-- Main Content -->
     <main class="container mx-auto px-4 py-8">
-        <!-- Menu Selection -->
+        <!-- Menu Section -->
         <div id="menuSection" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             <div class="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow cursor-pointer" onclick="showTeacherForm()">
                 <div class="text-center">
@@ -147,54 +110,6 @@
             </div>
         </div>
 
-        <!-- Settings Modal -->
-        <div id="settingsModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
-            <div class="bg-white rounded-xl p-8 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
-                <h2 class="text-2xl font-bold text-gray-800 mb-6 text-center">ตั้งค่าระบบ</h2>
-                
-                <div class="space-y-6">
-                    <div>
-                        <label class="block text-gray-700 font-medium mb-2">Google Apps Script URL</label>
-                        <input type="url" id="scriptUrl" placeholder="https://script.google.com/macros/s/YOUR_DEPLOYMENT_ID/exec" 
-                               class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                        <p class="text-sm text-gray-500 mt-1">URL ของ Google Apps Script ที่ Deploy แล้ว</p>
-                    </div>
-
-                    <div>
-                        <label class="block text-gray-700 font-medium mb-2">Google Sheet ID</label>
-                        <input type="text" id="sheetId" placeholder="137OMps_3meAY5lTwfR-Aq4QhqSn5ul1Eqiz8SjALyf4" 
-                               class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                        <p class="text-sm text-gray-500 mt-1">ID ของ Google Sheet ที่ต้องการบันทึกข้อมูล</p>
-                    </div>
-
-                    <div>
-                        <label class="block text-gray-700 font-medium mb-2">Google Drive Folder ID</label>
-                        <input type="text" id="folderId" placeholder="1pfSdQHTZwY4VpPtpB7jyLQr4UNFdReEz" 
-                               class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                        <p class="text-sm text-gray-500 mt-1">ID ของโฟลเดอร์ใน Google Drive สำหรับเก็บไฟล์แนบ</p>
-                    </div>
-
-                    <div class="border-t pt-4">
-                        <h3 class="font-semibold text-gray-800 mb-3">ทดสอบการเชื่อมต่อ</h3>
-                        <button onclick="testConnection()" id="testBtn" 
-                                class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition-colors">
-                            ทดสอบการเชื่อมต่อ
-                        </button>
-                        <div id="connectionStatus" class="mt-3"></div>
-                    </div>
-                </div>
-
-                <div class="flex space-x-4 mt-6">
-                    <button onclick="saveSettings()" class="flex-1 bg-green-600 hover:bg-green-700 text-white py-2 rounded-lg transition-colors">
-                        บันทึกการตั้งค่า
-                    </button>
-                    <button onclick="closeSettings()" class="flex-1 bg-gray-500 hover:bg-gray-600 text-white py-2 rounded-lg transition-colors">
-                        ยกเลิก
-                    </button>
-                </div>
-            </div>
-        </div>
-
         <!-- Login Modal -->
         <div id="loginModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
             <div class="bg-white rounded-xl p-8 max-w-md w-full mx-4">
@@ -202,7 +117,7 @@
                 <div class="space-y-4">
                     <div>
                         <label class="block text-gray-700 font-medium mb-2">ประเภทผู้ใช้</label>
-                        <select id="userType" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        <select id="userType" class="w-full border border-gray-300 rounded-lg px-4 py-2">
                             <option value="">เลือกประเภทผู้ใช้</option>
                             <option value="teacher">ครูประจำวิชา</option>
                             <option value="head">หัวหน้าสาระ</option>
@@ -212,15 +127,11 @@
                     </div>
                     <div id="passwordField" class="hidden">
                         <label class="block text-gray-700 font-medium mb-2">รหัสผ่าน</label>
-                        <input type="password" id="password" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        <input type="password" id="password" class="w-full border border-gray-300 rounded-lg px-4 py-2">
                     </div>
                     <div class="flex space-x-4">
-                        <button onclick="login()" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg transition-colors">
-                            เข้าสู่ระบบ
-                        </button>
-                        <button onclick="closeLogin()" class="flex-1 bg-gray-500 hover:bg-gray-600 text-white py-2 rounded-lg transition-colors">
-                            ยกเลิก
-                        </button>
+                        <button onclick="login()" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg">เข้าสู่ระบบ</button>
+                        <button onclick="closeLogin()" class="flex-1 bg-gray-500 hover:bg-gray-600 text-white py-2 rounded-lg">ยกเลิก</button>
                     </div>
                 </div>
             </div>
@@ -235,88 +146,66 @@
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
                             <label class="block text-gray-700 font-medium mb-2">วันที่สอนแทน</label>
-                            <input type="date" id="teachingDate" required 
-                                   class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            <input type="date" id="teachingDate" required class="w-full border border-gray-300 rounded-lg px-4 py-2">
                         </div>
                         <div>
                             <label class="block text-gray-700 font-medium mb-2">เวลา</label>
-                            <input type="text" id="teachingTime" required placeholder="เช่น 08:30-09:20 หรือ คาบ 1-2"
-                                   class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            <input type="text" id="teachingTime" required placeholder="เช่น 08:30-09:20" class="w-full border border-gray-300 rounded-lg px-4 py-2">
                         </div>
                     </div>
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
                             <label class="block text-gray-700 font-medium mb-2">ชั้น/ห้อง</label>
-                            <input type="text" id="classRoom" required placeholder="เช่น ม.1/1" 
-                                   class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            <input type="text" id="classRoom" required placeholder="เช่น ม.1/1" class="w-full border border-gray-300 rounded-lg px-4 py-2">
                         </div>
                         <div>
                             <label class="block text-gray-700 font-medium mb-2">วิชา</label>
-                            <input type="text" id="subject" required placeholder="เช่น คณิตศาสตร์" 
-                                   class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            <input type="text" id="subject" required placeholder="เช่น คณิตศาสตร์" class="w-full border border-gray-300 rounded-lg px-4 py-2">
                         </div>
                     </div>
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
                             <label class="block text-gray-700 font-medium mb-2">ครูประจำวิชา</label>
-                            <input type="text" id="regularTeacher" required placeholder="ชื่อครูประจำวิชา" 
-                                   class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            <input type="text" id="regularTeacher" required placeholder="ชื่อครูประจำวิชา" class="w-full border border-gray-300 rounded-lg px-4 py-2">
                         </div>
                         <div>
                             <label class="block text-gray-700 font-medium mb-2">ครูสอนแทน</label>
-                            <input type="text" id="substituteTeacher" required placeholder="ชื่อครูสอนแทน" 
-                                   class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            <input type="text" id="substituteTeacher" required placeholder="ชื่อครูสอนแทน" class="w-full border border-gray-300 rounded-lg px-4 py-2">
                         </div>
                     </div>
 
                     <div>
                         <label class="block text-gray-700 font-medium mb-2">เนื้อหาที่สอน</label>
-                        <textarea id="content" required rows="3" placeholder="ระบุเนื้อหาที่ต้องการให้สอน" 
-                                  class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"></textarea>
+                        <textarea id="content" required rows="3" placeholder="ระบุเนื้อหาที่ต้องการให้สอน" class="w-full border border-gray-300 rounded-lg px-4 py-2"></textarea>
                     </div>
 
                     <div>
                         <label class="block text-gray-700 font-medium mb-2">กิจกรรมการเรียนการสอน</label>
-                        <textarea id="activities" rows="3" placeholder="กิจกรรมหรือวิธีการสอน" 
-                                  class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"></textarea>
+                        <textarea id="activities" rows="3" placeholder="กิจกรรมหรือวิธีการสอน" class="w-full border border-gray-300 rounded-lg px-4 py-2"></textarea>
                     </div>
 
                     <div>
                         <label class="block text-gray-700 font-medium mb-2">การบ้าน (ถ้ามี)</label>
-                        <textarea id="homework" rows="2" placeholder="การบ้านที่มอบหมาย" 
-                                  class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"></textarea>
+                        <textarea id="homework" rows="2" placeholder="การบ้านที่มอบหมาย" class="w-full border border-gray-300 rounded-lg px-4 py-2"></textarea>
                     </div>
 
                     <div>
                         <label class="block text-gray-700 font-medium mb-2">ลายเซ็นครูประจำวิชา</label>
                         <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center bg-gray-50">
-                            <canvas id="teacherSignaturePad" width="600" height="200" 
-                                    class="signature-pad w-full bg-white rounded cursor-crosshair border-2 border-blue-300"></canvas>
+                            <canvas id="teacherSignaturePad" width="600" height="200" class="signature-pad w-full bg-white rounded cursor-crosshair border-2 border-blue-300"></canvas>
                             <div class="flex justify-center space-x-2 mt-3">
-                                <button type="button" onclick="clearSignature('teacherSignaturePad')" 
-                                        class="px-6 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors">
-                                    ลบลายเซ็น
-                                </button>
-                                <button type="button" onclick="testSignature()" 
-                                        class="px-6 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors">
-                                    ทดสอบเซ็น
-                                </button>
+                                <button type="button" onclick="clearSignature('teacherSignaturePad')" class="px-6 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600">ลบลายเซ็น</button>
+                                <button type="button" onclick="testSignature()" class="px-6 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600">ทดสอบเซ็น</button>
                             </div>
-                            <p class="text-sm text-gray-500 mt-2">คลิกและลากเพื่อเซ็นชื่อ (รองรับเมาส์และสัมผัส)</p>
+                            <p class="text-sm text-gray-500 mt-2">คลิกและลากเพื่อเซ็นชื่อ</p>
                         </div>
                     </div>
 
                     <div class="flex space-x-4">
-                        <button type="submit" 
-                                class="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg transition-colors">
-                            บันทึกข้อมูล
-                        </button>
-                        <button type="button" onclick="backToMenu()" 
-                                class="flex-1 bg-gray-500 hover:bg-gray-600 text-white py-3 rounded-lg transition-colors">
-                            กลับ
-                        </button>
+                        <button type="submit" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg">บันทึกข้อมูล</button>
+                        <button type="button" onclick="backToMenu()" class="flex-1 bg-gray-500 hover:bg-gray-600 text-white py-3 rounded-lg">กลับ</button>
                     </div>
                 </form>
             </div>
@@ -326,9 +215,7 @@
         <div id="headForm" class="hidden">
             <div class="bg-white rounded-xl shadow-lg p-8">
                 <h2 class="text-2xl font-bold text-gray-800 mb-6">หัวหน้าสาระ - พิจารณาอนุมัติ</h2>
-                <div id="headRecordsList">
-                    <p class="text-gray-600">ไม่มีรายการที่รออนุมัติ</p>
-                </div>
+                <div id="headRecordsList">ไม่มีรายการที่รออนุมัติ</div>
                 <button onclick="backToMenu()" class="mt-4 bg-gray-500 hover:bg-gray-600 text-white px-6 py-2 rounded-lg">กลับ</button>
             </div>
         </div>
@@ -337,9 +224,7 @@
         <div id="substituteForm" class="hidden">
             <div class="bg-white rounded-xl shadow-lg p-8">
                 <h2 class="text-2xl font-bold text-gray-800 mb-6">ครูสอนแทน - บันทึกผลการสอน</h2>
-                <div id="substituteRecordsList">
-                    <p class="text-gray-600">ไม่มีรายการที่ต้องบันทึก</p>
-                </div>
+                <div id="substituteRecordsList">ไม่มีรายการที่ต้องบันทึก</div>
                 <button onclick="backToMenu()" class="mt-4 bg-gray-500 hover:bg-gray-600 text-white px-6 py-2 rounded-lg">กลับ</button>
             </div>
         </div>
@@ -348,9 +233,7 @@
         <div id="adminForm" class="hidden">
             <div class="bg-white rounded-xl shadow-lg p-8">
                 <h2 class="text-2xl font-bold text-gray-800 mb-6">รองกลุ่มบริหาร - อนุมัติสุดท้าย</h2>
-                <div id="adminRecordsList">
-                    <p class="text-gray-600">ไม่มีรายการที่รอการอนุมัติ</p>
-                </div>
+                <div id="adminRecordsList">ไม่มีรายการที่รอการอนุมัติ</div>
                 <button onclick="backToMenu()" class="mt-4 bg-gray-500 hover:bg-gray-600 text-white px-6 py-2 rounded-lg">กลับ</button>
             </div>
         </div>
@@ -405,265 +288,66 @@
                 <div class="bg-gray-50 rounded-lg p-6">
                     <div class="flex justify-between items-center mb-4">
                         <h3 class="text-lg font-semibold text-gray-800">รายการล่าสุด</h3>
-                        <button onclick="showAllRecords()" class="text-blue-600 hover:text-blue-800 text-sm">ดูทั้งหมด</button>
+                        <button onclick="createTestRecord()" class="bg-green-600 text-white px-4 py-2 rounded">สร้างข้อมูลทดสอบ</button>
                     </div>
-                    <div id="recentRecords">
-                        <p class="text-gray-500">ไม่มีข้อมูล</p>
-                    </div>
+                    <div id="recentRecords">ไม่มีข้อมูล</div>
                 </div>
 
                 <button onclick="backToMenu()" class="mt-6 bg-gray-500 hover:bg-gray-600 text-white px-6 py-2 rounded-lg">กลับ</button>
-            </div>
-        </div>
-
-        <!-- All Records Section -->
-        <div id="allRecordsSection" class="hidden">
-            <div class="bg-white rounded-xl shadow-lg p-8">
-                <h2 class="text-2xl font-bold text-gray-800 mb-6">รายการทั้งหมด</h2>
-                
-                <div class="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-                    <h4 class="font-semibold text-yellow-800 mb-2">สำหรับทดสอบ</h4>
-                    <button onclick="createTestRecord()" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">
-                        สร้างข้อมูลทดสอบที่อนุมัติแล้ว
-                    </button>
-                    <p class="text-sm text-yellow-700 mt-2">สร้างข้อมูลตัวอย่างที่ผ่านการอนุมัติแล้วเพื่อทดสอบการพิมพ์ PDF</p>
-                </div>
-                
-                <div id="allRecordsList">
-                    <p class="text-gray-600">ไม่มีข้อมูล</p>
-                </div>
-
-                <button onclick="showDashboard()" class="mt-6 bg-gray-500 hover:bg-gray-600 text-white px-6 py-2 rounded-lg">กลับแดชบอร์ด</button>
             </div>
         </div>
     </main>
 
     <script>
         // Global variables
-        window.currentUser = null;
-        window.records = [];
-        window.appConfig = {
-            scriptUrl: 'https://script.google.com/macros/s/AKfycbxh8eE0eSTzD6rSyXE2cRVpXjU7hTBJ9IuiCI1lG_07CbTHRr0oROC3x2t4aeGjlJf-/exec',
-            sheetId: '137OMps_3meAY5lTwfR-Aq4QhqSn5ul1Eqiz8SjALyf4',
-            folderId: '1pfSdQHTZwY4VpPtpB7jyLQr4UNFdReEz'
-        };
+        let currentUser = null;
+        let records = JSON.parse(localStorage.getItem('teachingRecords') || '[]');
 
-        // Utility functions
-        window.showNotification = function(message, type = 'info', duration = 5000) {
+        // Notification system
+        function showNotification(message, type = 'info') {
             const notification = document.createElement('div');
-            notification.className = 'notification ' + type;
-            
-            const closeBtn = document.createElement('button');
-            closeBtn.innerHTML = '×';
-            closeBtn.className = 'ml-4 text-white hover:text-gray-200 text-xl';
-            closeBtn.onclick = () => notification.remove();
-            
-            const messageDiv = document.createElement('div');
-            messageDiv.className = 'flex items-center justify-between';
-            messageDiv.innerHTML = '<span>' + message + '</span>';
-            messageDiv.appendChild(closeBtn);
-            
-            notification.appendChild(messageDiv);
+            notification.className = `notification ${type}`;
+            notification.innerHTML = `<span>${message}</span><button onclick="this.parentElement.remove()" class="ml-4 text-white">×</button>`;
             document.body.appendChild(notification);
-            
             setTimeout(() => notification.classList.add('show'), 100);
-            
-            setTimeout(() => {
-                notification.classList.remove('show');
-                setTimeout(() => {
-                    if (notification.parentNode) {
-                        notification.remove();
-                    }
-                }, 300);
-            }, duration);
-        };
+            setTimeout(() => notification.remove(), 5000);
+        }
 
-        window.hideAllSections = function() {
-            const sections = ['menuSection', 'teacherForm', 'headForm', 'substituteForm', 'adminForm', 'dashboard', 'allRecordsSection'];
-            sections.forEach(id => {
+        // Section management
+        function hideAllSections() {
+            ['menuSection', 'teacherForm', 'headForm', 'substituteForm', 'adminForm', 'dashboard'].forEach(id => {
                 const element = document.getElementById(id);
                 if (element) element.classList.add('hidden');
             });
-        };
+        }
 
-        window.showSection = function(sectionId) {
+        function showSection(sectionId) {
             hideAllSections();
             const element = document.getElementById(sectionId);
             if (element) element.classList.remove('hidden');
-        };
+        }
 
-        window.backToMenu = function() {
+        function backToMenu() {
             showSection('menuSection');
-        };
+        }
 
-        // Navigation functions
-        window.showTeacherForm = function() {
-            showSection('teacherForm');
-            setTimeout(() => {
-                initSignaturePad('teacherSignaturePad');
-            }, 100);
-        };
+        // Login system
+        function showLogin() {
+            document.getElementById('loginModal').classList.remove('hidden');
+            document.getElementById('loginModal').classList.add('flex');
+        }
 
-        window.showHeadForm = function() {
-            loadHeadRecords();
-            showSection('headForm');
-        };
+        function closeLogin() {
+            document.getElementById('loginModal').classList.add('hidden');
+            document.getElementById('loginModal').classList.remove('flex');
+            document.getElementById('userType').value = '';
+            document.getElementById('password').value = '';
+            document.getElementById('passwordField').classList.add('hidden');
+        }
 
-        window.showSubstituteForm = function() {
-            loadSubstituteRecords();
-            showSection('substituteForm');
-        };
-
-        window.showAdminForm = function() {
-            if (currentUser !== 'admin') {
-                showNotification('คุณไม่มีสิทธิ์เข้าถึงส่วนนี้ กรุณาเข้าสู่ระบบด้วยบัญชีรองกลุ่มบริหาร', 'error');
-                showLogin();
-                return;
-            }
-            
-            const confirmAccess = confirm('ยืนยันการเข้าถึงระบบรองกลุ่มบริหาร\nการดำเนินการในส่วนนี้จะส่งผลต่อการอนุมัติขั้นสุดท้าย');
-            if (!confirmAccess) {
-                backToMenu();
-                return;
-            }
-            
-            loadAdminRecords();
-            showSection('adminForm');
-        };
-
-        window.showDashboard = function() {
-            loadDashboardData();
-            showSection('dashboard');
-        };
-
-        // Settings functions
-        window.loadSettings = function() {
-            const savedConfig = localStorage.getItem('appConfig');
-            if (savedConfig) {
-                const saved = JSON.parse(savedConfig);
-                appConfig.scriptUrl = saved.scriptUrl || appConfig.scriptUrl;
-                appConfig.sheetId = saved.sheetId || appConfig.sheetId;
-                appConfig.folderId = saved.folderId || appConfig.folderId;
-            }
-            
-            const scriptUrlEl = document.getElementById('scriptUrl');
-            const sheetIdEl = document.getElementById('sheetId');
-            const folderIdEl = document.getElementById('folderId');
-            
-            if (scriptUrlEl) scriptUrlEl.value = appConfig.scriptUrl;
-            if (sheetIdEl) sheetIdEl.value = appConfig.sheetId;
-            if (folderIdEl) folderIdEl.value = appConfig.folderId;
-        };
-
-        window.saveSettings = function() {
-            const scriptUrlEl = document.getElementById('scriptUrl');
-            const sheetIdEl = document.getElementById('sheetId');
-            const folderIdEl = document.getElementById('folderId');
-            
-            if (scriptUrlEl) appConfig.scriptUrl = scriptUrlEl.value.trim();
-            if (sheetIdEl) appConfig.sheetId = sheetIdEl.value.trim();
-            if (folderIdEl) appConfig.folderId = folderIdEl.value.trim();
-            
-            if (!appConfig.scriptUrl) {
-                showNotification('กรุณาใส่ Google Apps Script URL', 'error');
-                return;
-            }
-            
-            localStorage.setItem('appConfig', JSON.stringify(appConfig));
-            showNotification('บันทึกการตั้งค่าเรียบร้อยแล้ว', 'success');
-            closeSettings();
-        };
-
-        window.showSettings = function() {
-            loadSettings();
-            const modal = document.getElementById('settingsModal');
-            if (modal) {
-                modal.classList.remove('hidden');
-                modal.classList.add('flex');
-            }
-        };
-
-        window.closeSettings = function() {
-            const modal = document.getElementById('settingsModal');
-            if (modal) {
-                modal.classList.add('hidden');
-                modal.classList.remove('flex');
-            }
-        };
-
-        window.testConnection = function() {
-            const testBtn = document.getElementById('testBtn');
-            const statusDiv = document.getElementById('connectionStatus');
-            
-            if (!appConfig.scriptUrl) {
-                if (statusDiv) statusDiv.innerHTML = '<div class="text-red-600">กรุณาใส่ Google Apps Script URL ก่อน</div>';
-                return;
-            }
-            
-            if (testBtn) {
-                testBtn.disabled = true;
-                testBtn.innerHTML = '<div class="loading"></div> กำลังทดสอบ...';
-            }
-            if (statusDiv) statusDiv.innerHTML = '<div class="text-blue-600">กำลังทดสอบการเชื่อมต่อ...</div>';
-            
-            fetch(appConfig.scriptUrl, {
-                method: 'POST',
-                mode: 'no-cors',
-                headers: {
-                    'Content-Type': 'text/plain',
-                },
-                body: JSON.stringify({
-                    action: 'test',
-                    timestamp: new Date().toISOString()
-                })
-            })
-            .then(() => {
-                if (statusDiv) statusDiv.innerHTML = '<div class="text-green-600">การเชื่อมต่อสำเร็จ! ระบบพร้อมใช้งาน</div>';
-                showNotification('ทดสอบการเชื่อมต่อสำเร็จ', 'success');
-            })
-            .catch(error => {
-                console.error('Connection test failed:', error);
-                if (statusDiv) statusDiv.innerHTML = '<div class="text-red-600">การเชื่อมต่อล้มเหลว: ' + error.message + '</div>';
-                showNotification('การเชื่อมต่อล้มเหลว กรุณาตรวจสอบ URL', 'error');
-            })
-            .finally(() => {
-                if (testBtn) {
-                    testBtn.disabled = false;
-                    testBtn.innerHTML = 'ทดสอบการเชื่อมต่อ';
-                }
-            });
-        };
-
-        // Login functions
-        window.showLogin = function() {
-            const modal = document.getElementById('loginModal');
-            if (modal) {
-                modal.classList.remove('hidden');
-                modal.classList.add('flex');
-            }
-        };
-
-        window.closeLogin = function() {
-            const modal = document.getElementById('loginModal');
-            const userTypeEl = document.getElementById('userType');
-            const passwordEl = document.getElementById('password');
-            const passwordFieldEl = document.getElementById('passwordField');
-            
-            if (modal) {
-                modal.classList.add('hidden');
-                modal.classList.remove('flex');
-            }
-            if (userTypeEl) userTypeEl.value = '';
-            if (passwordEl) passwordEl.value = '';
-            if (passwordFieldEl) passwordFieldEl.classList.add('hidden');
-        };
-
-        window.login = function() {
-            const userTypeEl = document.getElementById('userType');
-            const passwordEl = document.getElementById('password');
-            
-            const userType = userTypeEl ? userTypeEl.value : '';
-            const password = passwordEl ? passwordEl.value : '';
+        function login() {
+            const userType = document.getElementById('userType').value;
+            const password = document.getElementById('password').value;
             
             if (!userType) {
                 showNotification('กรุณาเลือกประเภทผู้ใช้', 'error');
@@ -685,105 +369,103 @@
             showNotification('เข้าสู่ระบบสำเร็จ', 'success');
             
             switch(userType) {
-                case 'teacher':
-                    showTeacherForm();
-                    break;
-                case 'head':
-                    showHeadForm();
-                    break;
-                case 'substitute':
-                    showSubstituteForm();
-                    break;
-                case 'admin':
-                    showAdminForm();
-                    break;
+                case 'teacher': showTeacherForm(); break;
+                case 'head': showHeadForm(); break;
+                case 'substitute': showSubstituteForm(); break;
+                case 'admin': showAdminForm(); break;
             }
-        };
+        }
 
-        // Signature pad functions
-        window.initSignaturePad = function(canvasId) {
+        // Navigation functions
+        function showTeacherForm() {
+            showSection('teacherForm');
+            setTimeout(() => initSignaturePad('teacherSignaturePad'), 100);
+        }
+
+        function showHeadForm() {
+            loadHeadRecords();
+            showSection('headForm');
+        }
+
+        function showSubstituteForm() {
+            loadSubstituteRecords();
+            showSection('substituteForm');
+        }
+
+        function showAdminForm() {
+            if (currentUser !== 'admin') {
+                showNotification('กรุณาเข้าสู่ระบบด้วยบัญชีรองกลุ่มบริหาร', 'error');
+                showLogin();
+                return;
+            }
+            loadAdminRecords();
+            showSection('adminForm');
+        }
+
+        function showDashboard() {
+            loadDashboardData();
+            showSection('dashboard');
+        }
+
+        // Signature pad
+        function initSignaturePad(canvasId) {
             const canvas = document.getElementById(canvasId);
             if (!canvas) return;
             
             const ctx = canvas.getContext('2d');
             let isDrawing = false;
-
+            
             ctx.lineCap = 'round';
             ctx.lineJoin = 'round';
             ctx.strokeStyle = '#000000';
             ctx.lineWidth = 3;
 
-            function getEventPos(e) {
-                const rect = canvas.getBoundingClientRect();
-                const scaleX = canvas.width / rect.width;
-                const scaleY = canvas.height / rect.height;
-                
-                const clientX = e.clientX || (e.touches ? e.touches[0].clientX : 0);
-                const clientY = e.clientY || (e.touches ? e.touches[0].clientY : 0);
-                
-                return {
-                    x: (clientX - rect.left) * scaleX,
-                    y: (clientY - rect.top) * scaleY
-                };
-            }
-
             function startDrawing(e) {
                 isDrawing = true;
-                const pos = getEventPos(e);
-                
-                canvas.classList.add('drawing');
-                
+                const rect = canvas.getBoundingClientRect();
+                const x = (e.clientX || e.touches[0].clientX) - rect.left;
+                const y = (e.clientY || e.touches[0].clientY) - rect.top;
                 ctx.beginPath();
-                ctx.moveTo(pos.x, pos.y);
-                
+                ctx.moveTo(x, y);
                 e.preventDefault();
             }
 
             function draw(e) {
                 if (!isDrawing) return;
-                
-                const pos = getEventPos(e);
-                
-                ctx.lineTo(pos.x, pos.y);
+                const rect = canvas.getBoundingClientRect();
+                const x = (e.clientX || e.touches[0].clientX) - rect.left;
+                const y = (e.clientY || e.touches[0].clientY) - rect.top;
+                ctx.lineTo(x, y);
                 ctx.stroke();
-                ctx.beginPath();
-                ctx.moveTo(pos.x, pos.y);
-                
                 e.preventDefault();
             }
 
-            function stopDrawing(e) {
-                if (!isDrawing) return;
+            function stopDrawing() {
                 isDrawing = false;
-                canvas.classList.remove('drawing');
-                e.preventDefault();
             }
 
-            // Add event listeners
             canvas.addEventListener('mousedown', startDrawing);
             canvas.addEventListener('mousemove', draw);
             canvas.addEventListener('mouseup', stopDrawing);
-            canvas.addEventListener('mouseout', stopDrawing);
             canvas.addEventListener('touchstart', startDrawing);
             canvas.addEventListener('touchmove', draw);
             canvas.addEventListener('touchend', stopDrawing);
-        };
+        }
 
-        window.clearSignature = function(canvasId) {
+        function clearSignature(canvasId) {
             const canvas = document.getElementById(canvasId);
             if (canvas) {
                 const ctx = canvas.getContext('2d');
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
             }
-        };
+        }
 
-        window.testSignature = function() {
+        function testSignature() {
             const canvas = document.getElementById('teacherSignaturePad');
             if (!canvas) return;
             
             const ctx = canvas.getContext('2d');
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-            
             ctx.strokeStyle = '#000000';
             ctx.lineWidth = 3;
             ctx.beginPath();
@@ -794,712 +476,30 @@
             ctx.lineTo(350, 110);
             ctx.stroke();
             
-            showNotification('ทดสอบลายเซ็นเรียบร้อย คุณสามารถลบและเซ็นใหม่ได้', 'info');
-        };
-
-        // Create test record function
-        window.createTestRecord = function() {
-            const testRecord = {
-                id: 'TEST_' + Date.now(),
-                timestamp: new Date().toISOString(),
-                date: '2025-01-15',
-                time: '08:30-09:20',
-                classRoom: 'ม.1/1',
-                subject: 'คณิตศาสตร์',
-                regularTeacher: 'นางสาวสมใจ ใจดี',
-                substituteTeacher: 'นายสมชาย รักการสอน',
-                content: 'สมการเชิงเส้นตัวแปรเดียว การแก้สมการ ax + b = c',
-                activities: 'อธิบายหลักการ ให้นักเรียนฝึกแก้โจทย์ จับคู่ทำแบบฝึกหัด',
-                homework: 'แบบฝึกหัด หน้า 45 ข้อ 1-10',
-                status: 'completed',
-                createdAt: new Date().toLocaleString('th-TH'),
-                headApproval: 'approved',
-                headReason: 'อนุมัติโดยหัวหน้าสาระ เนื้อหาเหมาะสม',
-                adminApproval: 'approved',
-                adminReason: 'อนุมัติโดยรองกลุ่มบริหาร ครูสอนแทนมีความเหมาะสมและประสบการณ์เพียงพอ',
-                finalApprovalDate: new Date().toLocaleString('th-TH'),
-                substituteReport: {
-                    attendance: '35 คน (จากทั้งหมด 35 คน)',
-                    behavior: 'นักเรียนให้ความสนใจและมีส่วนร่วมในการเรียน',
-                    observations: 'นักเรียนเข้าใจเนื้อหาได้ดี สามารถทำแบบฝึกหัดได้ถูกต้อง',
-                    submittedAt: new Date().toLocaleString('th-TH')
-                }
-            };
-            
-            records.push(testRecord);
-            localStorage.setItem('teachingRecords', JSON.stringify(records));
-            
-            showNotification('สร้างข้อมูลทดสอบเรียบร้อย ตอนนี้สามารถทดสอบการพิมพ์ PDF ได้แล้ว', 'success');
-            if (typeof loadAllRecords === 'function') loadAllRecords();
-            if (typeof loadDashboardData === 'function') loadDashboardData();
-        };
-
-        // Load functions with real functionality
-        window.loadHeadRecords = function() {
-            const container = document.getElementById('headRecordsList');
-            if (!container) return;
-            
-            // โหลดข้อมูลจาก localStorage
-            const savedRecords = JSON.parse(localStorage.getItem('teachingRecords') || '[]');
-            records = savedRecords; // อัพเดท global records
-            
-            console.log('Loading head records, total records:', records.length);
-            
-            // หารายการที่รออนุมัติจากหัวหน้าสาระ
-            const pendingRecords = records.filter(record => {
-                const needsHeadApproval = !record.headApproval || record.headApproval === 'pending' || record.headApproval === '';
-                const notRejected = record.status !== 'rejected';
-                console.log('Record', record.id, 'headApproval:', record.headApproval, 'status:', record.status, 'needs approval:', needsHeadApproval && notRejected);
-                return needsHeadApproval && notRejected;
-            });
-            
-            console.log('Pending records for head approval:', pendingRecords.length);
-            
-            if (pendingRecords.length === 0) {
-                let html = '<div class="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded">';
-                html += '<h4 class="font-semibold text-yellow-800">ไม่มีรายการที่รออนุมัติ</h4>';
-                html += '<p class="text-sm text-yellow-700">รายการทั้งหมด: ' + records.length + ' รายการ</p>';
-                
-                if (records.length > 0) {
-                    html += '<button onclick="showAllForHead()" class="mt-2 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">ดูรายการทั้งหมด</button>';
-                }
-                html += '</div>';
-                container.innerHTML = html;
-                return;
-            }
-            
-            let html = '';
-            for (let i = 0; i < pendingRecords.length; i++) {
-                const record = pendingRecords[i];
-                html += '<div class="record-card status-pending mb-6 border border-yellow-300 bg-yellow-50">';
-                html += '<h4 class="font-semibold text-gray-800 mb-2">วิชา: ' + (record.subject || 'ไม่ระบุ') + '</h4>';
-                html += '<div class="grid grid-cols-2 gap-4 text-sm mb-3">';
-                html += '<p><strong>ชั้น/ห้อง:</strong> ' + (record.classRoom || 'ไม่ระบุ') + '</p>';
-                html += '<p><strong>วันที่:</strong> ' + (record.date || 'ไม่ระบุ') + '</p>';
-                html += '<p><strong>เวลา:</strong> ' + (record.time || 'ไม่ระบุ') + '</p>';
-                html += '<p><strong>สถานะ:</strong> รออนุมัติ</p>';
-                html += '</div>';
-                html += '<p class="mb-2"><strong>ครูประจำ:</strong> ' + (record.regularTeacher || 'ไม่ระบุ') + '</p>';
-                html += '<p class="mb-2"><strong>ครูสอนแทน:</strong> ' + (record.substituteTeacher || 'ไม่ระบุ') + '</p>';
-                html += '<p class="mb-3"><strong>เนื้อหา:</strong> ' + (record.content || 'ไม่ระบุ') + '</p>';
-                
-                html += '<div class="mt-4 border-t pt-4">';
-                html += '<h5 class="font-medium text-gray-700 mb-2">ลายเซ็นหัวหน้าสาระ (สำหรับการอนุมัติ)</h5>';
-                html += '<canvas id="headSignature_' + record.id + '" width="400" height="120" ';
-                html += 'class="signature-pad w-full bg-white rounded cursor-crosshair border-2 border-green-300 mb-2"></canvas>';
-                html += '<div class="flex space-x-2 mb-4">';
-                html += '<button onclick="clearSignature(\'headSignature_' + record.id + '\')" ';
-                html += 'class="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600">ลบลายเซ็น</button>';
-                html += '</div>';
-                html += '<div class="flex space-x-2">';
-                html += '<button onclick="approveWithSignature(\'' + record.id + '\')" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">✓ อนุมัติพร้อมลายเซ็น</button>';
-                html += '<button onclick="quickRejectRecord(\'' + record.id + '\')" class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700">✗ ไม่อนุมัติ</button>';
-                html += '</div>';
-                html += '</div>';
-                html += '</div>';
-            }
-            container.innerHTML = html;
-            
-            // Initialize signature pads after rendering
-            setTimeout(() => {
-                for (let i = 0; i < pendingRecords.length; i++) {
-                    initSignaturePad('headSignature_' + pendingRecords[i].id);
-                }
-            }, 100);
-        };
-
-        window.approveWithSignature = function(recordId) {
-            const canvas = document.getElementById('headSignature_' + recordId);
-            if (!canvas) {
-                showNotification('ไม่พบพื้นที่ลายเซ็น', 'error');
-                return;
-            }
-
-            // ตรวจสอบว่ามีลายเซ็นหรือไม่
-            const ctx = canvas.getContext('2d');
-            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-            let hasSignature = false;
-            
-            for (let i = 0; i < imageData.data.length; i += 4) {
-                const a = imageData.data[i + 3];
-                if (a > 0) {
-                    hasSignature = true;
-                    break;
-                }
-            }
-            
-            if (!hasSignature) {
-                showNotification('กรุณาเซ็นลายเซ็นก่อนอนุมัติ', 'error');
-                return;
-            }
-
-            const signatureData = canvas.toDataURL();
-            
-            for (let i = 0; i < records.length; i++) {
-                if (records[i].id === recordId) {
-                    records[i].headApproval = 'approved';
-                    records[i].headReason = 'อนุมัติโดยหัวหน้าสาระพร้อมลายเซ็น';
-                    records[i].headSignature = signatureData;
-                    records[i].status = 'head_approved';
-                    records[i].headApprovedAt = new Date().toLocaleString('th-TH');
-                    break;
-                }
-            }
-            
-            localStorage.setItem('teachingRecords', JSON.stringify(records));
-            showNotification('อนุมัติรายการเรียบร้อย พร้อมบันทึกลายเซ็น', 'success');
-            
-            setTimeout(() => {
-                loadHeadRecords();
-            }, 500);
-        };
-        };
-
-        window.showAllForHead = function() {
-            const container = document.getElementById('headRecordsList');
-            if (!container) return;
-            
-            let html = '<div class="mb-4">';
-            html += '<h4 class="font-semibold text-gray-800 mb-3">รายการทั้งหมด</h4>';
-            
-            for (let i = 0; i < records.length; i++) {
-                const record = records[i];
-                let statusColor = 'bg-gray-100';
-                let statusText = 'รออนุมัติ';
-                
-                if (record.headApproval === 'approved') {
-                    statusColor = 'bg-green-100';
-                    statusText = 'อนุมัติแล้ว';
-                } else if (record.headApproval === 'rejected') {
-                    statusColor = 'bg-red-100';
-                    statusText = 'ไม่อนุมัติ';
-                }
-                
-                html += '<div class="p-3 mb-2 border rounded ' + statusColor + '">';
-                html += '<div class="flex justify-between items-center">';
-                html += '<div>';
-                html += '<strong>' + (record.subject || 'ไม่ระบุ') + '</strong> - ' + (record.classRoom || 'ไม่ระบุ');
-                html += '<br><small class="text-gray-600">ครูประจำ: ' + (record.regularTeacher || 'ไม่ระบุ') + '</small>';
-                html += '<br><small class="text-gray-500">วันที่สร้าง: ' + (record.createdAt || 'ไม่ระบุ') + '</small>';
-                html += '</div>';
-                html += '<div class="text-right">';
-                html += '<div class="text-sm font-medium">' + statusText + '</div>';
-                if (!record.headApproval || record.headApproval === '' || record.headApproval === 'pending') {
-                    html += '<button onclick="quickApproveRecord(\'' + record.id + '\')" ';
-                    html += 'class="mt-1 bg-green-600 text-white px-3 py-1 rounded text-sm hover:bg-green-700">อนุมัติด่วน</button>';
-                }
-                html += '</div>';
-                html += '</div>';
-                html += '</div>';
-            }
-            
-            html += '<button onclick="loadHeadRecords()" class="mt-4 bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700">กลับ</button>';
-            html += '</div>';
-            
-            container.innerHTML = html;
-        };
-
-        window.quickApproveRecord = function(recordId) {
-            if (!confirm('ยืนยันการอนุมัติรายการนี้?')) {
-                return;
-            }
-            
-            for (let i = 0; i < records.length; i++) {
-                if (records[i].id === recordId) {
-                    records[i].headApproval = 'approved';
-                    records[i].headReason = 'อนุมัติโดยหัวหน้าสาระ';
-                    records[i].status = 'head_approved';
-                    records[i].headApprovedAt = new Date().toLocaleString('th-TH');
-                    break;
-                }
-            }
-            
-            localStorage.setItem('teachingRecords', JSON.stringify(records));
-            showNotification('อนุมัติรายการเรียบร้อยแล้ว', 'success');
-            
-            // รีเฟรชการแสดงผล
-            setTimeout(() => {
-                loadHeadRecords();
-            }, 500);
-        };
-
-        window.quickRejectRecord = function(recordId) {
-            const reason = prompt('กรุณาระบุเหตุผลที่ไม่อนุมัติ:');
-            if (!reason || reason.trim() === '') {
-                showNotification('กรุณาระบุเหตุผล', 'error');
-                return;
-            }
-            
-            for (let i = 0; i < records.length; i++) {
-                if (records[i].id === recordId) {
-                    records[i].headApproval = 'rejected';
-                    records[i].headReason = reason.trim();
-                    records[i].status = 'rejected';
-                    records[i].headRejectedAt = new Date().toLocaleString('th-TH');
-                    break;
-                }
-            }
-            
-            localStorage.setItem('teachingRecords', JSON.stringify(records));
-            showNotification('บันทึกการไม่อนุมัติเรียบร้อยแล้ว', 'success');
-            
-            // รีเฟรชการแสดงผล
-            setTimeout(() => {
-                loadHeadRecords();
-            }, 500);
-        };
-
-        window.loadSubstituteRecords = function() {
-            const container = document.getElementById('substituteRecordsList');
-            if (!container) return;
-            
-            const savedRecords = JSON.parse(localStorage.getItem('teachingRecords') || '[]');
-            records = savedRecords;
-            
-            const approvedRecords = records.filter(record => {
-                return record.headApproval === 'approved' && !record.substituteReport;
-            });
-            
-            if (approvedRecords.length === 0) {
-                container.innerHTML = '<p class="text-gray-600">ไม่มีรายการที่ต้องบันทึกผลการสอน</p>';
-                return;
-            }
-            
-            let html = '';
-            for (let i = 0; i < approvedRecords.length; i++) {
-                const record = approvedRecords[i];
-                html += '<div class="record-card status-approved mb-4 border border-green-300 bg-green-50">';
-                html += '<h4 class="font-semibold text-gray-800 mb-2">วิชา: ' + (record.subject || 'ไม่ระบุ') + '</h4>';
-                html += '<div class="grid grid-cols-2 gap-4 text-sm mb-3">';
-                html += '<p><strong>ชั้น/ห้อง:</strong> ' + (record.classRoom || 'ไม่ระบุ') + '</p>';
-                html += '<p><strong>วันที่:</strong> ' + (record.date || 'ไม่ระบุ') + '</p>';
-                html += '<p><strong>เวลา:</strong> ' + (record.time || 'ไม่ระบุ') + '</p>';
-                html += '<p><strong>สถานะ:</strong> อนุมัติแล้ว</p>';
-                html += '</div>';
-                html += '<p class="mb-2"><strong>ครูประจำ:</strong> ' + (record.regularTeacher || 'ไม่ระบุ') + '</p>';
-                html += '<p class="mb-2"><strong>ครูสอนแทน:</strong> ' + (record.substituteTeacher || 'ไม่ระบุ') + '</p>';
-                html += '<p class="mb-3"><strong>เนื้อหา:</strong> ' + (record.content || 'ไม่ระบุ') + '</p>';
-                
-                html += '<div class="mt-4 border-t pt-4">';
-                html += '<button onclick="showSubstituteReportForm(\'' + record.id + '\')" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">📝 บันทึกผลการสอน</button>';
-                html += '</div>';
-                html += '</div>';
-            }
-            container.innerHTML = html;
-        };
-
-        window.showSubstituteReportForm = function(recordId) {
-            const attendance = prompt('จำนวนนักเรียนที่เข้าเรียน (เช่น 30 คน จากทั้งหมด 35 คน):');
-            if (!attendance) return;
-            
-            const behavior = prompt('พฤติกรรมของนักเรียน:');
-            if (!behavior) return;
-            
-            const observations = prompt('ข้อสังเกตเพิ่มเติม (ถ้ามี):') || '';
-            
-            for (let i = 0; i < records.length; i++) {
-                if (records[i].id === recordId) {
-                    records[i].substituteReport = {
-                        attendance: attendance.trim(),
-                        behavior: behavior.trim(),
-                        observations: observations.trim(),
-                        submittedAt: new Date().toLocaleString('th-TH')
-                    };
-                    records[i].status = 'substitute_reported';
-                    break;
-                }
-            }
-            
-            localStorage.setItem('teachingRecords', JSON.stringify(records));
-            showNotification('บันทึกผลการสอนเรียบร้อยแล้ว', 'success');
-            
-            setTimeout(() => {
-                loadSubstituteRecords();
-            }, 500);
-        };
-
-        window.loadAdminRecords = function() {
-            const container = document.getElementById('adminRecordsList');
-            if (!container) return;
-            
-            const savedRecords = JSON.parse(localStorage.getItem('teachingRecords') || '[]');
-            records = savedRecords;
-            
-            const readyRecords = records.filter(record => {
-                return record.headApproval === 'approved' && 
-                       record.substituteReport && 
-                       (!record.adminApproval || record.adminApproval === 'pending');
-            });
-            
-            if (readyRecords.length === 0) {
-                container.innerHTML = '<p class="text-gray-600">ไม่มีรายการที่รอการอนุมัติขั้นสุดท้าย</p>';
-                return;
-            }
-            
-            let html = '';
-            for (let i = 0; i < readyRecords.length; i++) {
-                const record = readyRecords[i];
-                html += '<div class="record-card status-pending mb-6 border border-purple-300 bg-purple-50">';
-                html += '<h4 class="font-semibold text-gray-800 mb-2">วิชา: ' + (record.subject || 'ไม่ระบุ') + '</h4>';
-                html += '<div class="grid grid-cols-2 gap-4 text-sm mb-3">';
-                html += '<p><strong>ชั้น/ห้อง:</strong> ' + (record.classRoom || 'ไม่ระบุ') + '</p>';
-                html += '<p><strong>วันที่:</strong> ' + (record.date || 'ไม่ระบุ') + '</p>';
-                html += '<p><strong>เวลา:</strong> ' + (record.time || 'ไม่ระบุ') + '</p>';
-                html += '<p><strong>สถานะ:</strong> รอการอนุมัติขั้นสุดท้าย</p>';
-                html += '</div>';
-                html += '<p class="mb-2"><strong>ครูประจำ:</strong> ' + (record.regularTeacher || 'ไม่ระบุ') + '</p>';
-                html += '<p class="mb-2"><strong>ครูสอนแทน:</strong> ' + (record.substituteTeacher || 'ไม่ระบุ') + '</p>';
-                html += '<p class="mb-3"><strong>เนื้อหา:</strong> ' + (record.content || 'ไม่ระบุ') + '</p>';
-                
-                if (record.substituteReport) {
-                    html += '<div class="mt-3 p-3 bg-blue-50 rounded border">';
-                    html += '<h6 class="font-medium text-blue-800 mb-2">รายงานจากครูสอนแทน</h6>';
-                    html += '<p class="text-sm"><strong>จำนวนนักเรียน:</strong> ' + record.substituteReport.attendance + '</p>';
-                    html += '<p class="text-sm"><strong>พฤติกรรม:</strong> ' + record.substituteReport.behavior + '</p>';
-                    if (record.substituteReport.observations) {
-                        html += '<p class="text-sm"><strong>ข้อสังเกต:</strong> ' + record.substituteReport.observations + '</p>';
-                    }
-                    html += '</div>';
-                }
-                
-                html += '<div class="mt-4 border-t pt-4">';
-                html += '<h5 class="font-medium text-purple-700 mb-2">เหตุผลในการพิจารณา (บังคับกรอก)</h5>';
-                html += '<textarea id="adminReason_' + record.id + '" rows="3" placeholder="กรุณาระบุเหตุผลที่ชัดเจนในการอนุมัติหรือไม่อนุมัติ" ';
-                html += 'class="w-full border-2 border-purple-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 mb-3" required></textarea>';
-                
-                html += '<h5 class="font-medium text-purple-700 mb-2">ลายเซ็นรองผู้อำนวยการ (บังคับ)</h5>';
-                html += '<canvas id="adminSignature_' + record.id + '" width="400" height="120" ';
-                html += 'class="signature-pad w-full bg-white rounded cursor-crosshair border-2 border-purple-300 mb-2"></canvas>';
-                html += '<div class="flex space-x-2 mb-4">';
-                html += '<button onclick="clearSignature(\'adminSignature_' + record.id + '\')" ';
-                html += 'class="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600">ลบลายเซ็น</button>';
-                html += '</div>';
-                html += '<div class="flex space-x-2">';
-                html += '<button onclick="finalApproveWithSignature(\'' + record.id + '\')" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">✓ อนุมัติขั้นสุดท้าย</button>';
-                html += '<button onclick="finalRejectWithSignature(\'' + record.id + '\')" class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700">✗ ไม่อนุมัติ</button>';
-                html += '</div>';
-                html += '</div>';
-                html += '</div>';
-            }
-            container.innerHTML = html;
-            
-            // Initialize signature pads after rendering
-            setTimeout(() => {
-                for (let i = 0; i < readyRecords.length; i++) {
-                    initSignaturePad('adminSignature_' + readyRecords[i].id);
-                }
-            }, 100);
-        };
-
-        window.finalApproveWithSignature = function(recordId) {
-            const reasonTextarea = document.getElementById('adminReason_' + recordId);
-            const canvas = document.getElementById('adminSignature_' + recordId);
-            
-            if (!canvas) {
-                showNotification('ไม่พบพื้นที่ลายเซ็น', 'error');
-                return;
-            }
-
-            const reason = reasonTextarea ? reasonTextarea.value.trim() : '';
-            if (!reason || reason.length < 10) {
-                showNotification('กรุณาระบุเหตุผลในการพิจารณาอย่างน้อย 10 ตัวอักษร', 'error');
-                return;
-            }
-
-            // ตรวจสอบว่ามีลายเซ็นหรือไม่
-            const ctx = canvas.getContext('2d');
-            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-            let hasSignature = false;
-            
-            for (let i = 0; i < imageData.data.length; i += 4) {
-                const a = imageData.data[i + 3];
-                if (a > 0) {
-                    hasSignature = true;
-                    break;
-                }
-            }
-            
-            if (!hasSignature) {
-                showNotification('กรุณาเซ็นลายเซ็นก่อนอนุมัติ', 'error');
-                return;
-            }
-
-            const signatureData = canvas.toDataURL();
-            
-            for (let i = 0; i < records.length; i++) {
-                if (records[i].id === recordId) {
-                    records[i].adminApproval = 'approved';
-                    records[i].adminReason = reason;
-                    records[i].adminSignature = signatureData;
-                    records[i].status = 'completed';
-                    records[i].finalApprovalDate = new Date().toLocaleString('th-TH');
-                    break;
-                }
-            }
-            
-            localStorage.setItem('teachingRecords', JSON.stringify(records));
-            showNotification('อนุมัติขั้นสุดท้ายเรียบร้อย พร้อมบันทึกลายเซ็น', 'success');
-            
-            setTimeout(() => {
-                loadAdminRecords();
-            }, 500);
-        };
-
-        window.finalRejectWithSignature = function(recordId) {
-            const reasonTextarea = document.getElementById('adminReason_' + recordId);
-            const canvas = document.getElementById('adminSignature_' + recordId);
-            
-            if (!canvas) {
-                showNotification('ไม่พบพื้นที่ลายเซ็น', 'error');
-                return;
-            }
-
-            const reason = reasonTextarea ? reasonTextarea.value.trim() : '';
-            if (!reason || reason.length < 10) {
-                showNotification('กรุณาระบุเหตุผลในการพิจารณาอย่างน้อย 10 ตัวอักษร', 'error');
-                return;
-            }
-
-            // ตรวจสอบว่ามีลายเซ็นหรือไม่
-            const ctx = canvas.getContext('2d');
-            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-            let hasSignature = false;
-            
-            for (let i = 0; i < imageData.data.length; i += 4) {
-                const a = imageData.data[i + 3];
-                if (a > 0) {
-                    hasSignature = true;
-                    break;
-                }
-            }
-            
-            if (!hasSignature) {
-                showNotification('กรุณาเซ็นลายเซ็นก่อนไม่อนุมัติ', 'error');
-                return;
-            }
-
-            const signatureData = canvas.toDataURL();
-            
-            for (let i = 0; i < records.length; i++) {
-                if (records[i].id === recordId) {
-                    records[i].adminApproval = 'rejected';
-                    records[i].adminReason = reason;
-                    records[i].adminSignature = signatureData;
-                    records[i].status = 'rejected';
-                    records[i].finalRejectionDate = new Date().toLocaleString('th-TH');
-                    break;
-                }
-            }
-            
-            localStorage.setItem('teachingRecords', JSON.stringify(records));
-            showNotification('บันทึกการไม่อนุมัติเรียบร้อย พร้อมบันทึกลายเซ็น', 'success');
-            
-            setTimeout(() => {
-                loadAdminRecords();
-            }, 500);
-        };
-        };
-
-        window.finalApprove = function(recordId) {
-            const reason = prompt('เหตุผลในการอนุมัติ (จะบันทึกไว้ในเอกสาร):');
-            if (!reason || reason.trim() === '') {
-                showNotification('กรุณาระบุเหตุผลในการอนุมัติ', 'error');
-                return;
-            }
-            
-            for (let i = 0; i < records.length; i++) {
-                if (records[i].id === recordId) {
-                    records[i].adminApproval = 'approved';
-                    records[i].adminReason = reason.trim();
-                    records[i].status = 'completed';
-                    records[i].finalApprovalDate = new Date().toLocaleString('th-TH');
-                    break;
-                }
-            }
-            
-            localStorage.setItem('teachingRecords', JSON.stringify(records));
-            showNotification('อนุมัติขั้นสุดท้ายเรียบร้อยแล้ว', 'success');
-            
-            setTimeout(() => {
-                loadAdminRecords();
-            }, 500);
-        };
-
-        window.finalReject = function(recordId) {
-            const reason = prompt('เหตุผลที่ไม่อนุมัติ:');
-            if (!reason || reason.trim() === '') {
-                showNotification('กรุณาระบุเหตุผล', 'error');
-                return;
-            }
-            
-            for (let i = 0; i < records.length; i++) {
-                if (records[i].id === recordId) {
-                    records[i].adminApproval = 'rejected';
-                    records[i].adminReason = reason.trim();
-                    records[i].status = 'rejected';
-                    records[i].finalRejectionDate = new Date().toLocaleString('th-TH');
-                    break;
-                }
-            }
-            
-            localStorage.setItem('teachingRecords', JSON.stringify(records));
-            showNotification('บันทึกการไม่อนุมัติเรียบร้อยแล้ว', 'success');
-            
-            setTimeout(() => {
-                loadAdminRecords();
-            }, 500);
-        };
-
-        window.loadDashboardData = function() {
-            const localRecords = JSON.parse(localStorage.getItem('teachingRecords') || '[]');
-            updateDashboardDisplay(localRecords);
-        };
-
-        window.updateDashboardDisplay = function(records) {
-            const total = records.length;
-            const pending = records.filter(r => { 
-                return r.status === 'pending' || (!r.headApproval && !r.adminApproval); 
-            }).length;
-            const approved = records.filter(r => { 
-                return r.adminApproval === 'approved' || r.status === 'completed'; 
-            }).length;
-            const rejected = records.filter(r => { 
-                return r.adminApproval === 'rejected' || r.headApproval === 'rejected' || r.status === 'rejected'; 
-            }).length;
-            
-            const totalEl = document.getElementById('totalRecords');
-            const pendingEl = document.getElementById('pendingRecords');
-            const approvedEl = document.getElementById('approvedRecords');
-            const rejectedEl = document.getElementById('rejectedRecords');
-            
-            if (totalEl) totalEl.textContent = total;
-            if (pendingEl) pendingEl.textContent = pending;
-            if (approvedEl) approvedEl.textContent = approved;
-            if (rejectedEl) rejectedEl.textContent = rejected;
-            
-            const recentContainer = document.getElementById('recentRecords');
-            if (!recentContainer) return;
-            
-            if (total === 0) {
-                recentContainer.innerHTML = '<p class="text-gray-500">ไม่มีข้อมูล</p>';
-                return;
-            }
-            
-            const recentRecords = records.slice(-5).reverse();
-            let html = '';
-            for (let i = 0; i < recentRecords.length; i++) {
-                const record = recentRecords[i];
-                html += '<div class="record-card bg-white p-4 rounded border mb-2">';
-                html += '<h4 class="font-semibold text-gray-800">' + (record.subject || 'ไม่ระบุวิชา') + ' - ' + (record.classRoom || 'ไม่ระบุห้อง') + '</h4>';
-                html += '<p class="text-sm text-gray-600">ครูประจำ: ' + (record.regularTeacher || 'ไม่ระบุ') + ' | วันที่: ' + (record.date || 'ไม่ระบุ') + '</p>';
-                html += '</div>';
-            }
-            recentContainer.innerHTML = html;
-        };
-
-        window.showAllRecords = function() {
-            showSection('allRecordsSection');
-            loadAllRecords();
-        };
-
-        window.loadAllRecords = function() {
-            const container = document.getElementById('allRecordsList');
-            if (!container) return;
-            
-            if (records.length === 0) {
-                container.innerHTML = '<p class="text-gray-600">ไม่มีข้อมูล</p>';
-                return;
-            }
-            
-            let html = '';
-            for (let i = records.length - 1; i >= 0; i--) {
-                const record = records[i];
-                html += '<div class="record-card bg-white p-4 rounded border mb-4">';
-                html += '<h4 class="font-semibold text-gray-800 mb-2">' + (record.subject || 'ไม่ระบุวิชา') + ' - ' + (record.classRoom || 'ไม่ระบุห้อง') + '</h4>';
-                html += '<div class="grid grid-cols-2 gap-4 text-sm">';
-                html += '<p><strong>ครูประจำ:</strong> ' + (record.regularTeacher || 'ไม่ระบุ') + '</p>';
-                html += '<p><strong>ครูสอนแทน:</strong> ' + (record.substituteTeacher || 'ไม่ระบุ') + '</p>';
-                html += '<p><strong>วันที่สอน:</strong> ' + (record.date || 'ไม่ระบุ') + '</p>';
-                html += '<p><strong>เวลา:</strong> ' + (record.time || 'ไม่ระบุ') + '</p>';
-                html += '</div>';
-                html += '<p class="mt-2"><strong>เนื้อหา:</strong> ' + (record.content || 'ไม่ระบุ') + '</p>';
-                html += '<button onclick="generatePDF(\'' + record.id + '\')" class="mt-2 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">พิมพ์ PDF</button>';
-                html += '</div>';
-            }
-            container.innerHTML = html;
-        };
-
-        window.generatePDF = function(recordId) {
-            const record = records.find(r => r.id === recordId);
-            if (!record) {
-                showNotification('ไม่พบข้อมูลที่ต้องการพิมพ์', 'error');
-                return;
-            }
-
-            const pdfContent = createPDFContent(record);
-            
-            const printWindow = window.open('', '_blank');
-            if (printWindow) {
-                printWindow.document.write(pdfContent);
-                printWindow.document.close();
-                
-                printWindow.onload = function() {
-                    printWindow.print();
-                };
-            }
-        };
-
-        window.createPDFContent = function(record) {
-            const currentDate = new Date().toLocaleDateString('th-TH');
-            
-            let html = '<!DOCTYPE html>';
-            html += '<html lang="th"><head><meta charset="UTF-8">';
-            html += '<title>เอกสารบันทึกการสอนแทน - ' + (record.subject || 'ไม่ระบุ') + '</title>';
-            html += '<style>body { font-family: Arial, sans-serif; margin: 20px; line-height: 1.6; }</style>';
-            html += '</head><body>';
-            
-            html += '<div style="text-align: center; border-bottom: 2px solid #333; padding-bottom: 20px; margin-bottom: 30px;">';
-            html += '<h1>โรงเรียนสา</h1>';
-            html += '<h2>เอกสารบันทึกการสอนแทน</h2>';
-            html += '<p>เลขที่เอกสาร: ' + (record.id || 'ไม่ระบุ') + '</p>';
-            html += '</div>';
-
-            html += '<div style="margin-bottom: 25px; border: 1px solid #ccc; padding: 20px;">';
-            html += '<h3>ข้อมูลการมอบหมายงาน</h3>';
-            html += '<p><strong>วันที่สอนแทน:</strong> ' + (record.date || 'ไม่ระบุ') + '</p>';
-            html += '<p><strong>เวลา:</strong> ' + (record.time || 'ไม่ระบุ') + '</p>';
-            html += '<p><strong>ชั้น/ห้อง:</strong> ' + (record.classRoom || 'ไม่ระบุ') + '</p>';
-            html += '<p><strong>วิชา:</strong> ' + (record.subject || 'ไม่ระบุ') + '</p>';
-            html += '<p><strong>ครูประจำวิชา:</strong> ' + (record.regularTeacher || 'ไม่ระบุ') + '</p>';
-            html += '<p><strong>ครูสอนแทน:</strong> ' + (record.substituteTeacher || 'ไม่ระบุ') + '</p>';
-            html += '<p><strong>เนื้อหาที่สอน:</strong> ' + (record.content || 'ไม่ระบุ') + '</p>';
-            html += '<p><strong>กิจกรรมการเรียนการสอน:</strong> ' + (record.activities || 'ไม่ระบุ') + '</p>';
-            html += '<p><strong>การบ้าน:</strong> ' + (record.homework || 'ไม่มี') + '</p>';
-            html += '</div>';
-
-            if (record.substituteReport) {
-                html += '<div style="margin-bottom: 25px; border: 1px solid #ccc; padding: 20px;">';
-                html += '<h3>รายงานผลการสอนจากครูสอนแทน</h3>';
-                html += '<p><strong>จำนวนนักเรียนที่เข้าเรียน:</strong> ' + (record.substituteReport.attendance || 'ไม่ระบุ') + '</p>';
-                html += '<p><strong>พฤติกรรมของนักเรียน:</strong> ' + (record.substituteReport.behavior || 'ไม่ระบุ') + '</p>';
-                html += '<p><strong>ข้อสังเกตเพิ่มเติม:</strong> ' + (record.substituteReport.observations || 'ไม่มี') + '</p>';
-                html += '</div>';
-            }
-
-            html += '<div style="margin-top: 40px; text-align: center; font-size: 12px; color: #666; border-top: 1px solid #ccc; padding-top: 20px;">';
-            html += '<p>เอกสารนี้ออกโดยระบบบันทึกการสอนแทน - โรงเรียนสา</p>';
-            html += '<p>สถานะ: ' + (record.status === 'completed' ? 'อนุมัติครบทุกขั้นตอนแล้ว' : 'อยู่ระหว่างดำเนินการ') + ' | วันที่สร้างเอกสาร: ' + currentDate + '</p>';
-            html += '</div>';
-            
-            html += '</body></html>';
-            
-            return html;
-        };
+            showNotification('ทดสอบลายเซ็นเรียบร้อย', 'info');
+        }
 
         // Form submission
         function submitTeacherForm(e) {
             e.preventDefault();
             
+            const canvas = document.getElementById('teacherSignaturePad');
+            const ctx = canvas.getContext('2d');
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            let hasSignature = false;
+            
+            for (let i = 0; i < imageData.data.length; i += 4) {
+                if (imageData.data[i + 3] > 0) {
+                    hasSignature = true;
+                    break;
+                }
+            }
+            
+            if (!hasSignature) {
+                showNotification('กรุณาเซ็นลายเซ็นก่อนส่งข้อมูล', 'error');
+                return;
+            }
+
             const formData = {
                 id: 'TEACH_' + Date.now(),
                 timestamp: new Date().toISOString(),
@@ -1513,12 +513,220 @@
                 activities: document.getElementById('activities').value,
                 homework: document.getElementById('homework').value,
                 status: 'pending',
-                createdAt: new Date().toLocaleString('th-TH')
+                createdAt: new Date().toLocaleString('th-TH'),
+                teacherSignature: canvas.toDataURL()
             };
 
-            const canvas = document.getElementById('teacherSignaturePad');
-            if (!canvas) {
-                showNotification('ไม่พบพื้นที่ลายเซ็น', 'error');
+            records.push(formData);
+            localStorage.setItem('teachingRecords', JSON.stringify(records));
+            
+            showNotification('บันทึกข้อมูลสำเร็จ รอการอนุมัติจากหัวหน้าสาระ', 'success');
+            document.getElementById('teacherAssignmentForm').reset();
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            backToMenu();
+        }
+
+        // Load records functions
+        function loadHeadRecords() {
+            const container = document.getElementById('headRecordsList');
+            const pendingRecords = records.filter(record => !record.headApproval && record.status !== 'rejected');
+            
+            if (pendingRecords.length === 0) {
+                container.innerHTML = '<p class="text-gray-600">ไม่มีรายการที่รออนุมัติ</p>';
+                return;
+            }
+            
+            let html = '';
+            pendingRecords.forEach(record => {
+                html += `
+                    <div class="record-card status-pending mb-6">
+                        <h4 class="font-semibold text-gray-800 mb-2">วิชา: ${record.subject}</h4>
+                        <p class="mb-2"><strong>ชั้น/ห้อง:</strong> ${record.classRoom} | <strong>วันที่:</strong> ${record.date} | <strong>เวลา:</strong> ${record.time}</p>
+                        <p class="mb-2"><strong>ครูประจำ:</strong> ${record.regularTeacher} | <strong>ครูสอนแทน:</strong> ${record.substituteTeacher}</p>
+                        <p class="mb-3"><strong>เนื้อหา:</strong> ${record.content}</p>
+                        
+                        <div class="mt-4 border-t pt-4">
+                            <h5 class="font-medium text-gray-700 mb-2">ลายเซ็นหัวหน้าสาระ</h5>
+                            <canvas id="headSignature_${record.id}" width="400" height="120" class="signature-pad w-full bg-white rounded border-2 border-green-300 mb-2"></canvas>
+                            <div class="flex space-x-2 mb-4">
+                                <button onclick="clearSignature('headSignature_${record.id}')" class="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600">ลบลายเซ็น</button>
+                            </div>
+                            <div class="flex space-x-2">
+                                <button onclick="approveRecord('${record.id}')" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">อนุมัติ</button>
+                                <button onclick="rejectRecord('${record.id}')" class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700">ไม่อนุมัติ</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            container.innerHTML = html;
+            
+            // Initialize signature pads
+            setTimeout(() => {
+                pendingRecords.forEach(record => {
+                    initSignaturePad('headSignature_' + record.id);
+                });
+            }, 100);
+        }
+
+        function loadSubstituteRecords() {
+            const container = document.getElementById('substituteRecordsList');
+            const approvedRecords = records.filter(record => record.headApproval === 'approved' && !record.substituteReport);
+            
+            if (approvedRecords.length === 0) {
+                container.innerHTML = '<p class="text-gray-600">ไม่มีรายการที่ต้องบันทึกผลการสอน</p>';
+                return;
+            }
+            
+            let html = '';
+            approvedRecords.forEach(record => {
+                html += `
+                    <div class="record-card status-approved mb-4">
+                        <h4 class="font-semibold text-gray-800 mb-2">วิชา: ${record.subject}</h4>
+                        <p class="mb-2"><strong>ชั้น/ห้อง:</strong> ${record.classRoom} | <strong>วันที่:</strong> ${record.date}</p>
+                        <p class="mb-2"><strong>ครูประจำ:</strong> ${record.regularTeacher} | <strong>ครูสอนแทน:</strong> ${record.substituteTeacher}</p>
+                        <p class="mb-3"><strong>เนื้อหา:</strong> ${record.content}</p>
+                        
+                        <div class="mt-4 border-t pt-4">
+                            <button onclick="showSubstituteReportForm('${record.id}')" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">บันทึกผลการสอน</button>
+                        </div>
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
+        }
+
+        function loadAdminRecords() {
+            const container = document.getElementById('adminRecordsList');
+            const readyRecords = records.filter(record => record.headApproval === 'approved' && record.substituteReport && !record.adminApproval);
+            
+            if (readyRecords.length === 0) {
+                container.innerHTML = '<p class="text-gray-600">ไม่มีรายการที่รอการอนุมัติขั้นสุดท้าย</p>';
+                return;
+            }
+            
+            let html = '';
+            readyRecords.forEach(record => {
+                html += `
+                    <div class="record-card status-pending mb-6">
+                        <h4 class="font-semibold text-gray-800 mb-2">วิชา: ${record.subject}</h4>
+                        <p class="mb-2"><strong>ชั้น/ห้อง:</strong> ${record.classRoom} | <strong>วันที่:</strong> ${record.date}</p>
+                        <p class="mb-2"><strong>ครูประจำ:</strong> ${record.regularTeacher} | <strong>ครูสอนแทน:</strong> ${record.substituteTeacher}</p>
+                        <p class="mb-3"><strong>เนื้อหา:</strong> ${record.content}</p>
+                        
+                        <div class="mt-3 p-3 bg-blue-50 rounded">
+                            <h6 class="font-medium text-blue-800 mb-2">รายงานจากครูสอนแทน</h6>
+                            <p class="text-sm"><strong>จำนวนนักเรียน:</strong> ${record.substituteReport.attendance}</p>
+                            <p class="text-sm"><strong>พฤติกรรม:</strong> ${record.substituteReport.behavior}</p>
+                            ${record.substituteReport.observations ? `<p class="text-sm"><strong>ข้อสังเกต:</strong> ${record.substituteReport.observations}</p>` : ''}
+                        </div>
+                        
+                        <div class="mt-4 border-t pt-4">
+                            <h5 class="font-medium text-purple-700 mb-2">เหตุผลในการพิจารณา</h5>
+                            <textarea id="adminReason_${record.id}" rows="3" placeholder="ระบุเหตุผลในการอนุมัติหรือไม่อนุมัติ" class="w-full border-2 border-purple-300 rounded-lg px-4 py-2 mb-3"></textarea>
+                            
+                            <h5 class="font-medium text-purple-700 mb-2">ลายเซ็นรองผู้อำนวยการ</h5>
+                            <canvas id="adminSignature_${record.id}" width="400" height="120" class="signature-pad w-full bg-white rounded border-2 border-purple-300 mb-2"></canvas>
+                            <div class="flex space-x-2 mb-4">
+                                <button onclick="clearSignature('adminSignature_${record.id}')" class="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600">ลบลายเซ็น</button>
+                            </div>
+                            <div class="flex space-x-2">
+                                <button onclick="finalApprove('${record.id}')" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">อนุมัติขั้นสุดท้าย</button>
+                                <button onclick="finalReject('${record.id}')" class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700">ไม่อนุมัติ</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            container.innerHTML = html;
+            
+            // Initialize signature pads
+            setTimeout(() => {
+                readyRecords.forEach(record => {
+                    initSignaturePad('adminSignature_' + record.id);
+                });
+            }, 100);
+        }
+
+        // Record actions
+        function approveRecord(recordId) {
+            const canvas = document.getElementById('headSignature_' + recordId);
+            const ctx = canvas.getContext('2d');
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            let hasSignature = false;
+            
+            for (let i = 0; i < imageData.data.length; i += 4) {
+                if (imageData.data[i + 3] > 0) {
+                    hasSignature = true;
+                    break;
+                }
+            }
+            
+            if (!hasSignature) {
+                showNotification('กรุณาเซ็นลายเซ็นก่อนอนุมัติ', 'error');
+                return;
+            }
+
+            const record = records.find(r => r.id === recordId);
+            if (record) {
+                record.headApproval = 'approved';
+                record.headReason = 'อนุมัติโดยหัวหน้าสาระ';
+                record.headSignature = canvas.toDataURL();
+                record.status = 'head_approved';
+                localStorage.setItem('teachingRecords', JSON.stringify(records));
+                showNotification('อนุมัติรายการเรียบร้อย', 'success');
+                loadHeadRecords();
+            }
+        }
+
+        function rejectRecord(recordId) {
+            const reason = prompt('เหตุผลที่ไม่อนุมัติ:');
+            if (reason) {
+                const record = records.find(r => r.id === recordId);
+                if (record) {
+                    record.headApproval = 'rejected';
+                    record.headReason = reason;
+                    record.status = 'rejected';
+                    localStorage.setItem('teachingRecords', JSON.stringify(records));
+                    showNotification('ไม่อนุมัติรายการเรียบร้อย', 'success');
+                    loadHeadRecords();
+                }
+            }
+        }
+
+        function showSubstituteReportForm(recordId) {
+            const attendance = prompt('จำนวนนักเรียนที่เข้าเรียน:');
+            if (!attendance) return;
+            
+            const behavior = prompt('พฤติกรรมของนักเรียน:');
+            if (!behavior) return;
+            
+            const observations = prompt('ข้อสังเกตเพิ่มเติม (ถ้ามี):') || '';
+            
+            const record = records.find(r => r.id === recordId);
+            if (record) {
+                record.substituteReport = {
+                    attendance: attendance.trim(),
+                    behavior: behavior.trim(),
+                    observations: observations.trim(),
+                    submittedAt: new Date().toLocaleString('th-TH')
+                };
+                record.status = 'substitute_reported';
+                localStorage.setItem('teachingRecords', JSON.stringify(records));
+                showNotification('บันทึกผลการสอนเรียบร้อย', 'success');
+                loadSubstituteRecords();
+            }
+        }
+
+        function finalApprove(recordId) {
+            const reasonTextarea = document.getElementById('adminReason_' + recordId);
+            const canvas = document.getElementById('adminSignature_' + recordId);
+            
+            const reason = reasonTextarea.value.trim();
+            if (!reason || reason.length < 10) {
+                showNotification('กรุณาระบุเหตุผลอย่างน้อย 10 ตัวอักษร', 'error');
                 return;
             }
 
@@ -1527,67 +735,218 @@
             let hasSignature = false;
             
             for (let i = 0; i < imageData.data.length; i += 4) {
-                const a = imageData.data[i + 3];
-                if (a > 0) {
+                if (imageData.data[i + 3] > 0) {
                     hasSignature = true;
                     break;
                 }
             }
             
             if (!hasSignature) {
-                showNotification('กรุณาเซ็นลายเซ็นก่อนส่งข้อมูล', 'error');
+                showNotification('กรุณาเซ็นลายเซ็นก่อนอนุมัติ', 'error');
                 return;
             }
 
-            records.push(formData);
-            localStorage.setItem('teachingRecords', JSON.stringify(records));
-            
-            showNotification('บันทึกข้อมูลสำเร็จ รอการอนุมัติจากหัวหน้าสาระ', 'success');
-            document.getElementById('teacherAssignmentForm').reset();
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            
-            backToMenu();
+            const record = records.find(r => r.id === recordId);
+            if (record) {
+                record.adminApproval = 'approved';
+                record.adminReason = reason;
+                record.adminSignature = canvas.toDataURL();
+                record.status = 'completed';
+                record.finalApprovalDate = new Date().toLocaleString('th-TH');
+                localStorage.setItem('teachingRecords', JSON.stringify(records));
+                showNotification('อนุมัติขั้นสุดท้ายเรียบร้อย', 'success');
+                loadAdminRecords();
+            }
         }
 
-        // Initialize the app
+        function finalReject(recordId) {
+            const reasonTextarea = document.getElementById('adminReason_' + recordId);
+            const canvas = document.getElementById('adminSignature_' + recordId);
+            
+            const reason = reasonTextarea.value.trim();
+            if (!reason || reason.length < 10) {
+                showNotification('กรุณาระบุเหตุผลอย่างน้อย 10 ตัวอักษร', 'error');
+                return;
+            }
+
+            const ctx = canvas.getContext('2d');
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            let hasSignature = false;
+            
+            for (let i = 0; i < imageData.data.length; i += 4) {
+                if (imageData.data[i + 3] > 0) {
+                    hasSignature = true;
+                    break;
+                }
+            }
+            
+            if (!hasSignature) {
+                showNotification('กรุณาเซ็นลายเซ็นก่อนไม่อนุมัติ', 'error');
+                return;
+            }
+
+            const record = records.find(r => r.id === recordId);
+            if (record) {
+                record.adminApproval = 'rejected';
+                record.adminReason = reason;
+                record.adminSignature = canvas.toDataURL();
+                record.status = 'rejected';
+                localStorage.setItem('teachingRecords', JSON.stringify(records));
+                showNotification('บันทึกการไม่อนุมัติเรียบร้อย', 'success');
+                loadAdminRecords();
+            }
+        }
+
+        function loadDashboardData() {
+            const total = records.length;
+            const pending = records.filter(r => r.status === 'pending' || (!r.headApproval && !r.adminApproval)).length;
+            const approved = records.filter(r => r.adminApproval === 'approved' || r.status === 'completed').length;
+            const rejected = records.filter(r => r.adminApproval === 'rejected' || r.headApproval === 'rejected' || r.status === 'rejected').length;
+            
+            document.getElementById('totalRecords').textContent = total;
+            document.getElementById('pendingRecords').textContent = pending;
+            document.getElementById('approvedRecords').textContent = approved;
+            document.getElementById('rejectedRecords').textContent = rejected;
+            
+            const recentContainer = document.getElementById('recentRecords');
+            if (total === 0) {
+                recentContainer.innerHTML = '<p class="text-gray-500">ไม่มีข้อมูล</p>';
+                return;
+            }
+            
+            const recentRecords = records.slice(-5).reverse();
+            let html = '';
+            recentRecords.forEach(record => {
+                html += `
+                    <div class="bg-white p-4 rounded border mb-2">
+                        <h4 class="font-semibold text-gray-800">${record.subject} - ${record.classRoom}</h4>
+                        <p class="text-sm text-gray-600">ครูประจำ: ${record.regularTeacher} | วันที่: ${record.date}</p>
+                        <button onclick="generatePDF('${record.id}')" class="mt-2 bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700">พิมพ์ PDF</button>
+                    </div>
+                `;
+            });
+            recentContainer.innerHTML = html;
+        }
+
+        function createTestRecord() {
+            const testRecord = {
+                id: 'TEST_' + Date.now(),
+                timestamp: new Date().toISOString(),
+                date: '2025-01-15',
+                time: '08:30-09:20',
+                classRoom: 'ม.1/1',
+                subject: 'คณิตศาสตร์',
+                regularTeacher: 'นางสาวสมใจ ใจดี',
+                substituteTeacher: 'นายสมชาย รักการสอน',
+                content: 'สมการเชิงเส้นตัวแปรเดียว การแก้สมการ ax + b = c',
+                activities: 'อธิบายหลักการ ให้นักเรียนฝึกแก้โจทย์',
+                homework: 'แบบฝึกหัด หน้า 45 ข้อ 1-10',
+                status: 'completed',
+                createdAt: new Date().toLocaleString('th-TH'),
+                headApproval: 'approved',
+                headReason: 'อนุมัติโดยหัวหน้าสาระ',
+                adminApproval: 'approved',
+                adminReason: 'อนุมัติโดยรองกลุ่มบริหาร',
+                finalApprovalDate: new Date().toLocaleString('th-TH'),
+                substituteReport: {
+                    attendance: '35 คน (จากทั้งหมด 35 คน)',
+                    behavior: 'นักเรียนให้ความสนใจและมีส่วนร่วม',
+                    observations: 'นักเรียนเข้าใจเนื้อหาได้ดี',
+                    submittedAt: new Date().toLocaleString('th-TH')
+                }
+            };
+            
+            records.push(testRecord);
+            localStorage.setItem('teachingRecords', JSON.stringify(records));
+            showNotification('สร้างข้อมูลทดสอบเรียบร้อย', 'success');
+            loadDashboardData();
+        }
+
+        function generatePDF(recordId) {
+            const record = records.find(r => r.id === recordId);
+            if (!record) {
+                showNotification('ไม่พบข้อมูล', 'error');
+                return;
+            }
+
+            const currentDate = new Date().toLocaleDateString('th-TH');
+            
+            let html = `<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <title>เอกสารบันทึกการสอนแทน - ${record.subject}</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; line-height: 1.6; }
+        .header { text-align: center; border-bottom: 2px solid #333; padding-bottom: 20px; margin-bottom: 30px; }
+        .section { margin-bottom: 25px; border: 1px solid #ccc; padding: 20px; }
+        .footer { margin-top: 40px; text-align: center; font-size: 12px; color: #666; border-top: 1px solid #ccc; padding-top: 20px; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>โรงเรียนสา</h1>
+        <h2>เอกสารบันทึกการสอนแทน</h2>
+        <p>เลขที่เอกสาร: ${record.id}</p>
+    </div>
+
+    <div class="section">
+        <h3>ข้อมูลการมอบหมายงาน</h3>
+        <p><strong>วันที่สอนแทน:</strong> ${record.date}</p>
+        <p><strong>เวลา:</strong> ${record.time}</p>
+        <p><strong>ชั้น/ห้อง:</strong> ${record.classRoom}</p>
+        <p><strong>วิชา:</strong> ${record.subject}</p>
+        <p><strong>ครูประจำวิชา:</strong> ${record.regularTeacher}</p>
+        <p><strong>ครูสอนแทน:</strong> ${record.substituteTeacher}</p>
+        <p><strong>เนื้อหาที่สอน:</strong> ${record.content}</p>
+        <p><strong>กิจกรรมการเรียนการสอน:</strong> ${record.activities || 'ไม่ระบุ'}</p>
+        <p><strong>การบ้าน:</strong> ${record.homework || 'ไม่มี'}</p>
+    </div>
+
+    ${record.substituteReport ? `
+    <div class="section">
+        <h3>รายงานผลการสอนจากครูสอนแทน</h3>
+        <p><strong>จำนวนนักเรียนที่เข้าเรียน:</strong> ${record.substituteReport.attendance}</p>
+        <p><strong>พฤติกรรมของนักเรียน:</strong> ${record.substituteReport.behavior}</p>
+        <p><strong>ข้อสังเกตเพิ่มเติม:</strong> ${record.substituteReport.observations || 'ไม่มี'}</p>
+    </div>
+    ` : ''}
+
+    <div class="footer">
+        <p>เอกสารนี้ออกโดยระบบบันทึกการสอนแทน - โรงเรียนสา</p>
+        <p>สถานะ: ${record.status === 'completed' ? 'อนุมัติครบทุกขั้นตอนแล้ว' : 'อยู่ระหว่างดำเนินการ'} | วันที่สร้างเอกสาร: ${currentDate}</p>
+    </div>
+</body>
+</html>`;
+            
+            const printWindow = window.open('', '_blank');
+            if (printWindow) {
+                printWindow.document.write(html);
+                printWindow.document.close();
+                printWindow.onload = function() {
+                    printWindow.print();
+                };
+            }
+        }
+
+        // Event listeners
         document.addEventListener('DOMContentLoaded', function() {
-            // Setup user type change handler
-            const userTypeEl = document.getElementById('userType');
-            if (userTypeEl) {
-                userTypeEl.addEventListener('change', function() {
-                    const userType = this.value;
-                    const passwordField = document.getElementById('passwordField');
-                    
-                    if (userType === 'head' || userType === 'admin') {
-                        if (passwordField) passwordField.classList.remove('hidden');
-                    } else {
-                        if (passwordField) passwordField.classList.add('hidden');
-                    }
-                });
-            }
+            // User type change handler
+            document.getElementById('userType').addEventListener('change', function() {
+                const passwordField = document.getElementById('passwordField');
+                if (this.value === 'head' || this.value === 'admin') {
+                    passwordField.classList.remove('hidden');
+                } else {
+                    passwordField.classList.add('hidden');
+                }
+            });
 
-            // Setup form submit handler
-            const teacherForm = document.getElementById('teacherAssignmentForm');
-            if (teacherForm) {
-                teacherForm.addEventListener('submit', submitTeacherForm);
-            }
+            // Form submit handler
+            document.getElementById('teacherAssignmentForm').addEventListener('submit', submitTeacherForm);
 
-            // Initialize app data
-            console.log('Initializing teaching substitute system...');
-            
-            loadSettings();
-            records = JSON.parse(localStorage.getItem('teachingRecords') || '[]');
-            
+            // Initialize
             showSection('menuSection');
-            
-            if (!appConfig.scriptUrl || appConfig.scriptUrl.includes('YOUR_DEPLOYMENT_ID')) {
-                setTimeout(() => {
-                    showNotification('กรุณาตั้งค่า Google Apps Script URL ในเมนูตั้งค่า เพื่อเชื่อมต่อกับ Google Sheets', 'info', 10000);
-                }, 2000);
-            }
-            
-            console.log('Application initialized successfully');
-            console.log('Records loaded:', records.length);
+            console.log('ระบบเริ่มต้นเรียบร้อย โหลดข้อมูล:', records.length, 'รายการ');
         });
     </script>
 </body>
