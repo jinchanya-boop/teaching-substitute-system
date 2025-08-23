@@ -148,7 +148,7 @@
                 </div>
             </div>
 
-            <div class="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow cursor-pointer" onclick="showSubstituteForm()">
+            <div class="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow cursor-pointer" onclick="showSubstituteLogin()">
                 <div class="text-center">
                     <div class="bg-yellow-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
                         <span class="text-2xl">📝</span>
@@ -589,6 +589,14 @@
         function showHeadForm() {
             loadHeadRecords();
             showSection('headForm');
+        }
+
+        function showSubstituteLogin() {
+            // เปิดหน้าต่างล็อกอินแบบเฉพาะสำหรับครูสอนแทน
+            document.getElementById('userType').value = 'substitute';
+            document.getElementById('passwordField').classList.add('hidden');
+            document.getElementById('teacherNameField').classList.remove('hidden');
+            showLogin();
         }
 
         function showSubstituteForm() {
