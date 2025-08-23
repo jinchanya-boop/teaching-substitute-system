@@ -5,6 +5,41 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ระบบบันทึกการสอนแทน - โรงเรียนสา</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Firebase SDK -->
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+        import { getFirestore, collection, addDoc, getDocs, doc, updateDoc, query, orderBy, onSnapshot } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+        
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyDX_M4v2WTCvfwRKqxGJJkOvl18Y5X_BFo",
+            authDomain: "teaching-substitute-system.firebaseapp.com",
+            projectId: "teaching-substitute-system",
+            storageBucket: "teaching-substitute-system.firebasestorage.app",
+            messagingSenderId: "582118153938",
+            appId: "1:582118153938:web:31aa754bc721fd3bf970b"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        
+        // Make Firebase functions available globally
+        window.firebaseDB = db;
+        window.firebaseUtils = {
+            collection,
+            addDoc,
+            getDocs,
+            doc,
+            updateDoc,
+            query,
+            orderBy,
+            onSnapshot
+        };
+        
+        // Initialize the app after Firebase is ready
+        window.initializeApp();
+    </script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap');
         body { font-family: 'Sarabun', sans-serif; }
@@ -57,6 +92,14 @@
     </style>
 </head>
 <body class="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen">
+    <!-- Loading overlay -->
+    <div id="loadingOverlay" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white rounded-lg p-6 text-center">
+            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+            <p>กำลังเชื่อมต่อ Firebase...</p>
+        </div>
+    </div>
+
     <!-- Header -->
     <header class="bg-white shadow-lg border-b-4 border-blue-600">
         <div class="container mx-auto px-4 py-4">
@@ -304,9 +347,8 @@
                     <div class="flex justify-between items-center mb-4">
                         <h3 class="text-lg font-semibold text-gray-800">รายการล่าสุด</h3>
                         <div class="flex space-x-2">
-                            <button onclick="refreshDashboardData()" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">นำเข้าข้อมูล</button>
+                            <button onclick="refreshDashboardData()" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">รีเฟรช</button>
                             <button onclick="exportToCSV()" class="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700">ส่งออก CSV</button>
-                            <button onclick="resetLocalData()" class="bg-orange-600 text-white px-4 py-2 rounded hover:bg-orange-700">ล้างข้อมูล</button>
                             <button onclick="createTestRecord()" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">ข้อมูลทดสอบ</button>
                         </div>
                     </div>
@@ -321,202 +363,125 @@
     <script>
         // Global variables
         let currentUser = null;
-        let records = JSON.parse(localStorage.getItem('teachingRecords') || '[]');
+        let records = [];
+        let firebaseInitialized = false;
         
-        // Google Apps Script configuration
-        const appConfig = {
-            scriptUrl: 'https://script.google.com/macros/s/AKfycbxh8eE0eSTzD6rSyXE2cRVpXjU7hTBJ9IuiCI1lG_07CbTHRr0oROC3x2t4aeGjlJf-/exec',
-            sheetId: '137OMps_3meAY5lTwfR-Aq4QhqSn5ul1Eqiz8SjALyf4',
-            folderId: '1pfSdQHTZwY4VpPtpB7jyLQr4UNFdReEz'
+        // Firebase functions
+        const COLLECTION_NAME = 'teachingRecords';
+
+        // Initialize app after Firebase is ready
+        window.initializeApp = function() {
+            console.log('Firebase initialized successfully');
+            firebaseInitialized = true;
+            hideLoadingOverlay();
+            loadRecordsFromFirebase();
+            
+            // Event listeners
+            document.getElementById('userType').addEventListener('change', function() {
+                const passwordField = document.getElementById('passwordField');
+                const teacherNameField = document.getElementById('teacherNameField');
+                
+                if (this.value === 'head' || this.value === 'admin') {
+                    passwordField.classList.remove('hidden');
+                    teacherNameField.classList.add('hidden');
+                } else if (this.value === 'substitute') {
+                    passwordField.classList.add('hidden');
+                    teacherNameField.classList.remove('hidden');
+                } else {
+                    passwordField.classList.add('hidden');
+                    teacherNameField.classList.add('hidden');
+                }
+            });
+
+            document.getElementById('teacherAssignmentForm').addEventListener('submit', submitTeacherForm);
+            showSection('menuSection');
         };
 
-        // ฟังก์ชันซิงค์ข้อมูลจาก Google Sheet แบบใหม่
-        function syncWithGoogleSheet() {
-            // เนื่องจากข้อจำกัดของ CORS จึงใช้วิธีอื่นในการซิงค์
-            showNotification('เนื่องจากข้อจำกัดของ Google Sheet API การซิงค์จะใช้วิธีทางเลือก', 'info');
-            
-            // แนะนำให้ผู้ใช้ป้อนข้อมูลจาก Google Sheet เอง
-            const shouldImport = confirm('ต้องการนำเข้าข้อมูลจาก Google Sheet ใหม่หรือไม่?\n\n' +
-                'หากต้องการ กรุณาคัดลอกข้อมูลจาก Google Sheet มาวางในกล่องข้อความต่อไป\n' +
-                'รูปแบบ: ID,วันที่,เวลา,ชั้น,วิชา,ครูประจำ,ครูสอนแทน,เนื้อหา,สถานะ');
-            
-            if (shouldImport) {
-                const csvData = prompt('วางข้อมูลจาก Google Sheet (รูปแบบ CSV):');
-                if (csvData) {
-                    try {
-                        importDataFromCSV(csvData);
-                        showNotification('นำเข้าข้อมูลสำเร็จ', 'success');
-                        loadDashboardData();
-                    } catch (error) {
-                        showNotification('เกิดข้อผิดพลาดในการนำเข้าข้อมูล: ' + error.message, 'error');
-                    }
-                }
+        function hideLoadingOverlay() {
+            const overlay = document.getElementById('loadingOverlay');
+            if (overlay) {
+                overlay.style.display = 'none';
             }
-            
-            return Promise.resolve({ success: true });
         }
 
-        // ฟังก์ชันนำเข้าข้อมูลจาก CSV
-        function importDataFromCSV(csvData) {
-            const lines = csvData.trim().split('\n');
-            const newRecords = [];
-            
-            // ข้ามบรรทัดแรก (header)
-            for (let i = 1; i < lines.length; i++) {
-                const cells = lines[i].split(',');
-                if (cells.length >= 9) {
-                    const record = {
-                        id: cells[0].trim(),
-                        timestamp: cells[1].trim(),
-                        date: cells[2].trim(),
-                        time: cells[3].trim(),
-                        classRoom: cells[4].trim(),
-                        subject: cells[5].trim(),
-                        regularTeacher: cells[6].trim(),
-                        substituteTeacher: cells[7].trim(),
-                        content: cells[8].trim(),
-                        activities: cells[9] ? cells[9].trim() : '',
-                        homework: cells[10] ? cells[10].trim() : '',
-                        status: cells[13] ? cells[13].trim() : 'pending',
-                        headApproval: cells[14] ? cells[14].trim() : '',
-                        headReason: cells[15] ? cells[15].trim() : '',
-                        adminApproval: cells[16] ? cells[16].trim() : '',
-                        adminReason: cells[17] ? cells[17].trim() : '',
-                        createdAt: cells[18] ? cells[18].trim() : new Date().toLocaleString('th-TH')
-                    };
-                    
-                    // เพิ่ม substituteReport ถ้ามีข้อมูล
-                    if (cells.length > 23 && cells[23]) {
-                        record.substituteReport = {
-                            attendance: cells[23].trim(),
-                            behavior: cells[24] ? cells[24].trim() : '',
-                            observations: cells[25] ? cells[25].trim() : '',
-                            submittedAt: cells[26] ? cells[26].trim() : ''
-                        };
-                    }
-                    
-                    newRecords.push(record);
-                }
+        // Firebase data functions
+        async function saveRecordToFirebase(recordData) {
+            if (!firebaseInitialized) {
+                throw new Error('Firebase not initialized');
             }
-            
-            // แทนที่ข้อมูลเก่าด้วยข้อมูลใหม่
-            records = newRecords;
-            localStorage.setItem('teachingRecords', JSON.stringify(records));
+
+            try {
+                const docRef = await window.firebaseUtils.addDoc(
+                    window.firebaseUtils.collection(window.firebaseDB, COLLECTION_NAME),
+                    {
+                        ...recordData,
+                        createdAt: new Date(),
+                        updatedAt: new Date()
+                    }
+                );
+                console.log('Document written with ID: ', docRef.id);
+                recordData.firebaseId = docRef.id;
+                return docRef.id;
+            } catch (error) {
+                console.error('Error adding document: ', error);
+                throw error;
+            }
         }
 
-        // ฟังก์ชันส่งออกข้อมูลเป็น CSV
-        function exportToCSV() {
-            if (records.length === 0) {
-                showNotification('ไม่มีข้อมูลให้ส่งออก', 'error');
+        async function updateRecordInFirebase(firebaseId, updateData) {
+            if (!firebaseInitialized) {
+                throw new Error('Firebase not initialized');
+            }
+
+            try {
+                const docRef = window.firebaseUtils.doc(window.firebaseDB, COLLECTION_NAME, firebaseId);
+                await window.firebaseUtils.updateDoc(docRef, {
+                    ...updateData,
+                    updatedAt: new Date()
+                });
+                console.log('Document updated successfully');
+            } catch (error) {
+                console.error('Error updating document: ', error);
+                throw error;
+            }
+        }
+
+        async function loadRecordsFromFirebase() {
+            if (!firebaseInitialized) {
+                console.warn('Firebase not initialized, using localStorage');
+                records = JSON.parse(localStorage.getItem('teachingRecords') || '[]');
                 return;
             }
-            
-            const headers = [
-                'ID', 'วันที่บันทึก', 'วันที่สอน', 'เวลา', 'ชั้น/ห้อง', 'วิชา',
-                'ครูประจำ', 'ครูสอนแทน', 'เนื้อหา', 'กิจกรรม', 'การบ้าน',
-                'จำนวนไฟล์', 'รายการไฟล์', 'สถานะ', 'อนุมัติหัวหน้า', 'เหตุผลหัวหน้า',
-                'อนุมัติรองฯ', 'เหตุผลรองฯ', 'วันที่สร้าง', 'ลายเซ็นครูมอบหมาย',
-                'ลายเซ็นหัวหน้า', 'ลายเซ็นรองฯ', 'โฟลเดอร์ไฟล์',
-                'การเข้าเรียน', 'พฤติกรรม', 'ข้อสังเกต', 'วันที่ส่งรายงาน'
-            ];
-            
-            const csvContent = [headers.join(',')];
-            
-            records.forEach(record => {
-                const row = [
-                    record.id || '',
-                    record.timestamp || '',
-                    record.date || '',
-                    record.time || '',
-                    record.classRoom || '',
-                    record.subject || '',
-                    record.regularTeacher || '',
-                    record.substituteTeacher || '',
-                    record.content || '',
-                    record.activities || '',
-                    record.homework || '',
-                    '0',
-                    '',
-                    record.status || 'pending',
-                    record.headApproval || '',
-                    record.headReason || '',
-                    record.adminApproval || '',
-                    record.adminReason || '',
-                    record.createdAt || '',
-                    record.teacherSignature ? 'มีลายเซ็น' : '',
-                    record.headSignature ? 'มีลายเซ็น' : '',
-                    record.adminSignature ? 'มีลายเซ็น' : '',
-                    '',
-                    record.substituteReport ? record.substituteReport.attendance : '',
-                    record.substituteReport ? record.substituteReport.behavior : '',
-                    record.substituteReport ? record.substituteReport.observations : '',
-                    record.substituteReport ? record.substituteReport.submittedAt : ''
-                ];
+
+            try {
+                showNotification('กำลังโหลดข้อมูลจาก Firebase...', 'info');
+                const q = window.firebaseUtils.query(
+                    window.firebaseUtils.collection(window.firebaseDB, COLLECTION_NAME),
+                    window.firebaseUtils.orderBy('createdAt', 'desc')
+                );
                 
-                csvContent.push(row.join(','));
-            });
-            
-            const blob = new Blob([csvContent.join('\n')], { type: 'text/csv;charset=utf-8' });
-            const url = URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            link.href = url;
-            link.download = 'teaching-records-' + new Date().toISOString().split('T')[0] + '.csv';
-            link.click();
-            URL.revokeObjectURL(url);
-            
-            showNotification('ส่งออกข้อมูลเรียบร้อย', 'success');
-        }
-
-        // ฟังก์ชันรีเฟรชข้อมูลในแดชบอร์ด
-        function refreshDashboardData() {
-            // แสดงหน้าต่างการซิงค์
-            syncWithGoogleSheet().then(() => {
-                loadDashboardData();
-            });
-        }
-
-        // ฟังก์ชันล้างข้อมูลใน localStorage
-        function resetLocalData() {
-            if (confirm('คุณต้องการล้างข้อมูลทั้งหมดใน localStorage หรือไม่?\n\nข้อมูลจะถูกลบถาวร หากต้องการกู้คืนจะต้องนำเข้าจาก Google Sheet ใหม่')) {
-                localStorage.removeItem('teachingRecords');
+                const querySnapshot = await window.firebaseUtils.getDocs(q);
                 records = [];
-                loadDashboardData();
-                showNotification('ล้างข้อมูล localStorage เรียบร้อย', 'info');
+                
+                querySnapshot.forEach((doc) => {
+                    const data = doc.data();
+                    records.push({
+                        ...data,
+                        firebaseId: doc.id,
+                        // Convert Firestore timestamps to strings for compatibility
+                        createdAt: data.createdAt?.toDate?.() ? data.createdAt.toDate().toLocaleString('th-TH') : data.createdAt,
+                        timestamp: data.createdAt?.toDate?.() ? data.createdAt.toDate().toISOString() : data.timestamp
+                    });
+                });
+                
+                console.log(`Loaded ${records.length} records from Firebase`);
+                showNotification(`โหลดข้อมูล ${records.length} รายการจาก Firebase เรียบร้อย`, 'success');
+            } catch (error) {
+                console.error('Error loading records from Firebase:', error);
+                showNotification('เกิดข้อผิดพลาดในการโหลดข้อมูลจาก Firebase', 'error');
+                // Fallback to localStorage
+                records = JSON.parse(localStorage.getItem('teachingRecords') || '[]');
             }
-        }
-        function sendToGoogleSheet(data, action = 'addRecord', additionalData = {}) {
-            if (!appConfig.scriptUrl) {
-                console.log('ไม่มี Google Apps Script URL');
-                return Promise.resolve();
-            }
-
-            const payload = {
-                action: action,
-                data: data,
-                sheetId: appConfig.sheetId,
-                folderId: appConfig.folderId,
-                timestamp: new Date().toISOString(),
-                ...additionalData
-            };
-
-            console.log('กำลังส่งข้อมูลไป Google Sheet:', payload);
-
-            return fetch(appConfig.scriptUrl, {
-                method: 'POST',
-                mode: 'no-cors',
-                headers: {
-                    'Content-Type': 'text/plain',
-                },
-                body: JSON.stringify(payload)
-            })
-            .then(() => {
-                console.log('ส่งข้อมูลไป Google Sheet สำเร็จ');
-                return { success: true };
-            })
-            .catch(error => {
-                console.error('ส่งข้อมูลไป Google Sheet ล้มเหลว:', error);
-                return { success: false, error: error };
-            });
         }
 
         // Notification system
@@ -558,7 +523,6 @@
             document.getElementById('loginModal').classList.remove('flex');
             document.getElementById('userType').value = '';
             document.getElementById('password').value = '';
-            document.getElementById('passwordField').classList.add('hidden');
         }
 
         function login() {
@@ -587,7 +551,6 @@
             }
             
             currentUser = userType;
-            // เก็บชื่อครูสอนแทนสำหรับการกรองข้อมูล
             if (userType === 'substitute') {
                 currentUser = { type: 'substitute', name: teacherName.trim() };
             }
@@ -630,7 +593,6 @@
         }
 
         function showDashboard() {
-            // แสดงแดชบอร์ดโดยตรงโดยไม่ซิงค์อัตโนมัติ
             loadDashboardData();
             showSection('dashboard');
         }
@@ -721,7 +683,7 @@
         }
 
         // Form submission
-        function submitTeacherForm(e) {
+        async function submitTeacherForm(e) {
             e.preventDefault();
             
             const canvas = document.getElementById('teacherSignaturePad');
@@ -754,7 +716,6 @@
                 activities: document.getElementById('activities').value,
                 homework: document.getElementById('homework').value,
                 status: 'pending',
-                createdAt: new Date().toLocaleString('th-TH'),
                 teacherSignature: canvas.toDataURL()
             };
 
@@ -763,31 +724,35 @@
             submitBtn.disabled = true;
             submitBtn.textContent = 'กำลังบันทึก...';
 
-            records.push(formData);
-            localStorage.setItem('teachingRecords', JSON.stringify(records));
-            
-            const signatures = {
-                teacher: canvas.toDataURL()
-            };
-            
-            sendToGoogleSheet(formData, 'addRecord', { signatures: signatures })
-                .then(() => {
-                    showNotification('บันทึกข้อมูลสำเร็จ รอการอนุมัติจากหัวหน้าสาระ', 'success');
-                    document.getElementById('teacherAssignmentForm').reset();
-                    ctx.clearRect(0, 0, canvas.width, canvas.height);
-                    backToMenu();
-                })
-                .catch(error => {
-                    console.error('ส่งข้อมูลไป Google Sheet ล้มเหลว:', error);
-                    showNotification('บันทึกข้อมูลในระบบแล้ว แต่อาจมีปัญหาในการส่งไป Google Sheet', 'info');
-                    document.getElementById('teacherAssignmentForm').reset();
-                    ctx.clearRect(0, 0, canvas.width, canvas.height);
-                    backToMenu();
-                })
-                .finally(() => {
-                    submitBtn.disabled = false;
-                    submitBtn.textContent = originalText;
-                });
+            try {
+                // Save to Firebase first
+                if (firebaseInitialized) {
+                    await saveRecordToFirebase(formData);
+                    showNotification('บันทึกข้อมูลลง Firebase สำเร็จ', 'success');
+                }
+                
+                // Also save to localStorage as backup
+                records.push(formData);
+                localStorage.setItem('teachingRecords', JSON.stringify(records));
+                
+                document.getElementById('teacherAssignmentForm').reset();
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                backToMenu();
+                
+            } catch (error) {
+                console.error('Error saving to Firebase:', error);
+                // Save to localStorage as fallback
+                records.push(formData);
+                localStorage.setItem('teachingRecords', JSON.stringify(records));
+                showNotification('บันทึกข้อมูลในระบบแล้ว (ใช้ข้อมูลท้องถิ่น)', 'info');
+                
+                document.getElementById('teacherAssignmentForm').reset();
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                backToMenu();
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = originalText;
+            }
         }
 
         // Load records functions
@@ -836,10 +801,8 @@
         function loadSubstituteRecords() {
             const container = document.getElementById('substituteRecordsList');
             
-            // กรองข้อมูลเฉพาะครูสอนแทนที่ล็อกอิน
             let filteredRecords = records.filter(record => record.headApproval === 'approved' && !record.substituteReport);
             
-            // ถ้าเป็นครูสอนแทนที่ระบุชื่อ ให้แสดงเฉพาะงานที่ได้รับมอบหมาย
             if (currentUser && currentUser.type === 'substitute') {
                 const currentTeacherName = currentUser.name;
                 filteredRecords = filteredRecords.filter(record => 
@@ -927,7 +890,7 @@
         }
 
         // Record actions
-        function approveRecord(recordId) {
+        async function approveRecord(recordId) {
             const canvas = document.getElementById('headSignature_' + recordId);
             const ctx = canvas.getContext('2d');
             const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
@@ -947,73 +910,68 @@
 
             const record = records.find(r => r.id === recordId);
             if (record) {
-                record.headApproval = 'approved';
-                record.headReason = 'อนุมัติโดยหัวหน้าสาระ';
-                record.headSignature = canvas.toDataURL();
-                record.status = 'head_approved';
-                record.headApprovedAt = new Date().toLocaleString('th-TH');
-                
-                localStorage.setItem('teachingRecords', JSON.stringify(records));
-                
                 const updateData = {
-                    recordId: recordId,
-                    updateData: {
-                        headApproval: 'approved',
-                        headReason: 'อนุมัติโดยหัวหน้าสาระ',
-                        status: 'head_approved'
-                    },
-                    headSignature: canvas.toDataURL()
+                    headApproval: 'approved',
+                    headReason: 'อนุมัติโดยหัวหน้าสาระ',
+                    headSignature: canvas.toDataURL(),
+                    status: 'head_approved',
+                    headApprovedAt: new Date().toLocaleString('th-TH')
                 };
                 
-                sendToGoogleSheet(record, 'updateRecord', updateData)
-                    .then(() => {
-                        showNotification('อนุมัติรายการเรียบร้อย และบันทึกใน Google Sheet แล้ว', 'success');
-                        loadHeadRecords();
-                    })
-                    .catch(error => {
-                        console.error('ส่งข้อมูลการอนุมัติไป Google Sheet ล้มเหลว:', error);
-                        showNotification('อนุมัติรายการเรียบร้อย แต่อาจมีปัญหาในการส่งไป Google Sheet', 'info');
-                        loadHeadRecords();
-                    });
+                // Update local record
+                Object.assign(record, updateData);
+                localStorage.setItem('teachingRecords', JSON.stringify(records));
+                
+                try {
+                    // Update in Firebase
+                    if (firebaseInitialized && record.firebaseId) {
+                        await updateRecordInFirebase(record.firebaseId, updateData);
+                        showNotification('อนุมัติรายการและอัปเดตใน Firebase เรียบร้อย', 'success');
+                    } else {
+                        showNotification('อนุมัติรายการเรียบร้อย (ใช้ข้อมูลท้องถิ่น)', 'info');
+                    }
+                } catch (error) {
+                    console.error('Error updating in Firebase:', error);
+                    showNotification('อนุมัติรายการเรียบร้อย แต่มีปัญหาในการอัปเดต Firebase', 'info');
+                }
+                
+                loadHeadRecords();
             }
         }
 
-        function rejectRecord(recordId) {
+        async function rejectRecord(recordId) {
             const reason = prompt('เหตุผลที่ไม่อนุมัติ:');
             if (reason) {
                 const record = records.find(r => r.id === recordId);
                 if (record) {
-                    record.headApproval = 'rejected';
-                    record.headReason = reason;
-                    record.status = 'rejected';
-                    record.headRejectedAt = new Date().toLocaleString('th-TH');
-                    
-                    localStorage.setItem('teachingRecords', JSON.stringify(records));
-                    
                     const updateData = {
-                        recordId: recordId,
-                        updateData: {
-                            headApproval: 'rejected',
-                            headReason: reason,
-                            status: 'rejected'
-                        }
+                        headApproval: 'rejected',
+                        headReason: reason,
+                        status: 'rejected',
+                        headRejectedAt: new Date().toLocaleString('th-TH')
                     };
                     
-                    sendToGoogleSheet(record, 'updateRecord', updateData)
-                        .then(() => {
-                            showNotification('ไม่อนุมัติรายการเรียบร้อย และบันทึกใน Google Sheet แล้ว', 'success');
-                            loadHeadRecords();
-                        })
-                        .catch(error => {
-                            console.error('ส่งข้อมูลการไม่อนุมัติไป Google Sheet ล้มเหลว:', error);
-                            showNotification('ไม่อนุมัติรายการเรียบร้อย แต่อาจมีปัญหาในการส่งไป Google Sheet', 'info');
-                            loadHeadRecords();
-                        });
+                    Object.assign(record, updateData);
+                    localStorage.setItem('teachingRecords', JSON.stringify(records));
+                    
+                    try {
+                        if (firebaseInitialized && record.firebaseId) {
+                            await updateRecordInFirebase(record.firebaseId, updateData);
+                            showNotification('ไม่อนุมัติรายการและอัปเดตใน Firebase เรียบร้อย', 'success');
+                        } else {
+                            showNotification('ไม่อนุมัติรายการเรียบร้อย (ใช้ข้อมูลท้องถิ่น)', 'info');
+                        }
+                    } catch (error) {
+                        console.error('Error updating in Firebase:', error);
+                        showNotification('ไม่อนุมัติรายการเรียบร้อย แต่มีปัญหาในการอัปเดต Firebase', 'info');
+                    }
+                    
+                    loadHeadRecords();
                 }
             }
         }
 
-        function showSubstituteReportForm(recordId) {
+        async function showSubstituteReportForm(recordId) {
             const attendance = prompt('จำนวนนักเรียนที่เข้าเรียน:');
             if (!attendance) return;
             
@@ -1024,37 +982,36 @@
             
             const record = records.find(r => r.id === recordId);
             if (record) {
-                record.substituteReport = {
-                    attendance: attendance.trim(),
-                    behavior: behavior.trim(),
-                    observations: observations.trim(),
-                    submittedAt: new Date().toLocaleString('th-TH')
+                const reportData = {
+                    substituteReport: {
+                        attendance: attendance.trim(),
+                        behavior: behavior.trim(),
+                        observations: observations.trim(),
+                        submittedAt: new Date().toLocaleString('th-TH')
+                    },
+                    status: 'substitute_reported'
                 };
-                record.status = 'substitute_reported';
+                
+                Object.assign(record, reportData);
                 localStorage.setItem('teachingRecords', JSON.stringify(records));
                 
-                const updateData = {
-                    recordId: recordId,
-                    updateData: {
-                        substituteReport: record.substituteReport,
-                        status: 'substitute_reported'
+                try {
+                    if (firebaseInitialized && record.firebaseId) {
+                        await updateRecordInFirebase(record.firebaseId, reportData);
+                        showNotification('บันทึกผลการสอนและอัปเดตใน Firebase เรียบร้อย', 'success');
+                    } else {
+                        showNotification('บันทึกผลการสอนเรียบร้อย (ใช้ข้อมูลท้องถิ่น)', 'info');
                     }
-                };
+                } catch (error) {
+                    console.error('Error updating in Firebase:', error);
+                    showNotification('บันทึกผลการสอนเรียบร้อย แต่มีปัญหาในการอัปเดต Firebase', 'info');
+                }
                 
-                sendToGoogleSheet(record, 'updateRecord', updateData)
-                    .then(() => {
-                        showNotification('บันทึกผลการสอนเรียบร้อย และส่งไป Google Sheet แล้ว', 'success');
-                        loadSubstituteRecords();
-                    })
-                    .catch(error => {
-                        console.error('ส่งรายงานไป Google Sheet ล้มเหลว:', error);
-                        showNotification('บันทึกผลการสอนเรียบร้อย แต่อาจมีปัญหาในการส่งไป Google Sheet', 'info');
-                        loadSubstituteRecords();
-                    });
+                loadSubstituteRecords();
             }
         }
 
-        function finalApprove(recordId) {
+        async function finalApprove(recordId) {
             const reasonTextarea = document.getElementById('adminReason_' + recordId);
             const canvas = document.getElementById('adminSignature_' + recordId);
             
@@ -1082,38 +1039,34 @@
 
             const record = records.find(r => r.id === recordId);
             if (record) {
-                record.adminApproval = 'approved';
-                record.adminReason = reason;
-                record.adminSignature = canvas.toDataURL();
-                record.status = 'completed';
-                record.finalApprovalDate = new Date().toLocaleString('th-TH');
-                
-                localStorage.setItem('teachingRecords', JSON.stringify(records));
-                
                 const updateData = {
-                    recordId: recordId,
-                    updateData: {
-                        adminApproval: 'approved',
-                        adminReason: reason,
-                        status: 'completed'
-                    },
-                    adminSignature: canvas.toDataURL()
+                    adminApproval: 'approved',
+                    adminReason: reason,
+                    adminSignature: canvas.toDataURL(),
+                    status: 'completed',
+                    finalApprovalDate: new Date().toLocaleString('th-TH')
                 };
                 
-                sendToGoogleSheet(record, 'updateRecord', updateData)
-                    .then(() => {
-                        showNotification('อนุมัติขั้นสุดท้ายเรียบร้อย และบันทึกใน Google Sheet แล้ว', 'success');
-                        loadAdminRecords();
-                    })
-                    .catch(error => {
-                        console.error('ส่งข้อมูลการอนุมัติขั้นสุดท้ายไป Google Sheet ล้มเหลว:', error);
-                        showNotification('อนุมัติขั้นสุดท้ายเรียบร้อย แต่อาจมีปัญหาในการส่งไป Google Sheet', 'info');
-                        loadAdminRecords();
-                    });
+                Object.assign(record, updateData);
+                localStorage.setItem('teachingRecords', JSON.stringify(records));
+                
+                try {
+                    if (firebaseInitialized && record.firebaseId) {
+                        await updateRecordInFirebase(record.firebaseId, updateData);
+                        showNotification('อนุมัติขั้นสุดท้ายและอัปเดตใน Firebase เรียบร้อย', 'success');
+                    } else {
+                        showNotification('อนุมัติขั้นสุดท้ายเรียบร้อย (ใช้ข้อมูลท้องถิ่น)', 'info');
+                    }
+                } catch (error) {
+                    console.error('Error updating in Firebase:', error);
+                    showNotification('อนุมัติขั้นสุดท้ายเรียบร้อย แต่มีปัญหาในการอัปเดต Firebase', 'info');
+                }
+                
+                loadAdminRecords();
             }
         }
 
-        function finalReject(recordId) {
+        async function finalReject(recordId) {
             const reasonTextarea = document.getElementById('adminReason_' + recordId);
             const canvas = document.getElementById('adminSignature_' + recordId);
             
@@ -1141,34 +1094,30 @@
 
             const record = records.find(r => r.id === recordId);
             if (record) {
-                record.adminApproval = 'rejected';
-                record.adminReason = reason;
-                record.adminSignature = canvas.toDataURL();
-                record.status = 'rejected';
-                record.finalRejectionDate = new Date().toLocaleString('th-TH');
-                
-                localStorage.setItem('teachingRecords', JSON.stringify(records));
-                
                 const updateData = {
-                    recordId: recordId,
-                    updateData: {
-                        adminApproval: 'rejected',
-                        adminReason: reason,
-                        status: 'rejected'
-                    },
-                    adminSignature: canvas.toDataURL()
+                    adminApproval: 'rejected',
+                    adminReason: reason,
+                    adminSignature: canvas.toDataURL(),
+                    status: 'rejected',
+                    finalRejectionDate: new Date().toLocaleString('th-TH')
                 };
                 
-                sendToGoogleSheet(record, 'updateRecord', updateData)
-                    .then(() => {
-                        showNotification('บันทึกการไม่อนุมัติเรียบร้อย และบันทึกใน Google Sheet แล้ว', 'success');
-                        loadAdminRecords();
-                    })
-                    .catch(error => {
-                        console.error('ส่งข้อมูลการไม่อนุมัติไป Google Sheet ล้มเหลว:', error);
-                        showNotification('บันทึกการไม่อนุมัติเรียบร้อย แต่อาจมีปัญหาในการส่งไป Google Sheet', 'info');
-                        loadAdminRecords();
-                    });
+                Object.assign(record, updateData);
+                localStorage.setItem('teachingRecords', JSON.stringify(records));
+                
+                try {
+                    if (firebaseInitialized && record.firebaseId) {
+                        await updateRecordInFirebase(record.firebaseId, updateData);
+                        showNotification('บันทึกการไม่อนุมัติและอัปเดตใน Firebase เรียบร้อย', 'success');
+                    } else {
+                        showNotification('บันทึกการไม่อนุมัติเรียบร้อย (ใช้ข้อมูลท้องถิ่น)', 'info');
+                    }
+                } catch (error) {
+                    console.error('Error updating in Firebase:', error);
+                    showNotification('บันทึกการไม่อนุมัติเรียบร้อย แต่มีปัญหาในการอัปเดต Firebase', 'info');
+                }
+                
+                loadAdminRecords();
             }
         }
 
@@ -1189,330 +1138,5 @@
                 return;
             }
             
-            // หารายการครูที่ยังไม่บันทึกผลการสอน
             const pendingSubstituteReports = records.filter(record => 
-                record.headApproval === 'approved' && !record.substituteReport
-            );
-            
-            let html = '';
-            
-            // แสดงส่วนครูที่ยังไม่บันทึกผลการสอน
-            if (pendingSubstituteReports.length > 0) {
-                html += `
-                    <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
-                        <h4 class="font-semibold text-yellow-800 mb-3">
-                            ⚠️ ครูสอนแทนที่ยังไม่บันทึกผลการสอน (${pendingSubstituteReports.length} คน)
-                        </h4>
-                        <div class="space-y-2">
-                `;
-                
-                pendingSubstituteReports.forEach(record => {
-                    html += `
-                        <div class="bg-white p-3 rounded border-l-4 border-yellow-400">
-                            <div class="flex justify-between items-center">
-                                <div>
-                                    <span class="font-medium text-gray-800">${record.substituteTeacher}</span>
-                                    <span class="text-gray-600">- ${record.subject} (${record.classRoom})</span>
-                                    <span class="text-sm text-gray-500">วันที่: ${record.date}</span>
-                                </div>
-                                <span class="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded">รอบันทึกผล</span>
-                            </div>
-                        </div>
-                    `;
-                });
-                
-                html += `
-                        </div>
-                    </div>
-                `;
-            }
-            
-            // แสดงรายการล่าสุด
-            html += '<h4 class="font-semibold text-gray-800 mb-3">รายการล่าสุด</h4>';
-            
-            const recentRecords = records.slice(-5).reverse();
-            recentRecords.forEach(record => {
-                let statusBadge = '';
-                let statusColor = '';
-                
-                if (record.status === 'completed') {
-                    statusBadge = 'เสร็จสิ้น';
-                    statusColor = 'bg-green-100 text-green-800';
-                } else if (record.status === 'rejected') {
-                    statusBadge = 'ไม่อนุมัติ';
-                    statusColor = 'bg-red-100 text-red-800';
-                } else if (record.headApproval === 'approved' && !record.substituteReport) {
-                    statusBadge = 'รอบันทึกผล';
-                    statusColor = 'bg-yellow-100 text-yellow-800';
-                } else if (record.headApproval === 'approved') {
-                    statusBadge = 'รอการอนุมัติ';
-                    statusColor = 'bg-blue-100 text-blue-800';
-                } else {
-                    statusBadge = 'รออนุมัติ';
-                    statusColor = 'bg-gray-100 text-gray-800';
-                }
-                
-                html += `
-                    <div class="bg-white p-4 rounded border mb-2">
-                        <div class="flex justify-between items-start">
-                            <div class="flex-1">
-                                <h4 class="font-semibold text-gray-800">${record.subject} - ${record.classRoom}</h4>
-                                <p class="text-sm text-gray-600">ครูประจำ: ${record.regularTeacher} | ครูสอนแทน: ${record.substituteTeacher}</p>
-                                <p class="text-sm text-gray-500">วันที่: ${record.date}</p>
-                            </div>
-                            <div class="flex items-center space-x-2">
-                                <span class="text-xs px-2 py-1 rounded ${statusColor}">${statusBadge}</span>
-                                <button onclick="generatePDF('${record.id}')" class="bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700">พิมพ์ PDF</button>
-                            </div>
-                        </div>
-                    </div>
-                `;
-            });
-            
-            recentContainer.innerHTML = html;
-        }
-
-        function createTestRecord() {
-            const testRecord = {
-                id: 'TEST_' + Date.now(),
-                timestamp: new Date().toISOString(),
-                date: '2025-01-15',
-                time: '08:30-09:20',
-                classRoom: 'ม.1/1',
-                subject: 'คณิตศาสตร์',
-                regularTeacher: 'นางสาวสมใจ ใจดี',
-                substituteTeacher: 'นายสมชาย รักการสอน',
-                content: 'สมการเชิงเส้นตัวแปรเดียว การแก้สมการ ax + b = c',
-                activities: 'อธิบายหลักการ ให้นักเรียนฝึกแก้โจทย์',
-                homework: 'แบบฝึกหัด หน้า 45 ข้อ 1-10',
-                status: 'completed',
-                createdAt: new Date().toLocaleString('th-TH'),
-                headApproval: 'approved',
-                headReason: 'อนุมัติโดยหัวหน้าสาระ',
-                adminApproval: 'approved',
-                adminReason: 'อนุมัติโดยรองกลุ่มบริหาร',
-                finalApprovalDate: new Date().toLocaleString('th-TH'),
-                substituteReport: {
-                    attendance: '35 คน (จากทั้งหมด 35 คน)',
-                    behavior: 'นักเรียนให้ความสนใจและมีส่วนร่วม',
-                    observations: 'นักเรียนเข้าใจเนื้อหาได้ดี',
-                    submittedAt: new Date().toLocaleString('th-TH')
-                }
-            };
-            
-            records.push(testRecord);
-            localStorage.setItem('teachingRecords', JSON.stringify(records));
-            showNotification('สร้างข้อมูลทดสอบเรียบร้อย', 'success');
-            loadDashboardData();
-        }
-
-        function generatePDF(recordId) {
-            const record = records.find(r => r.id === recordId);
-            if (!record) {
-                showNotification('ไม่พบข้อมูล', 'error');
-                return;
-            }
-
-            const currentDate = new Date().toLocaleDateString('th-TH');
-            
-            let html = `<!DOCTYPE html>
-<html lang="th">
-<head>
-    <meta charset="UTF-8">
-    <title>เอกสารบันทึกการสอนแทน - ${record.subject}</title>
-    <style>
-        @page { size: A4; margin: 15mm; }
-        body { 
-            font-family: 'Sarabun', Arial, sans-serif; 
-            font-size: 11px; 
-            line-height: 1.3; 
-            margin: 0; 
-            padding: 0;
-            color: #333;
-        }
-        .pdf-content { 
-            max-width: 100%; 
-            height: auto;
-        }
-        .pdf-header { 
-            text-align: center; 
-            margin-bottom: 10px; 
-            border-bottom: 2px solid #333; 
-            padding-bottom: 8px; 
-        }
-        .pdf-header h1 { 
-            font-size: 16px; 
-            margin: 0 0 5px 0; 
-            font-weight: bold; 
-        }
-        .pdf-header h2 { 
-            font-size: 14px;
-            margin: 0 0 3px 0; 
-            font-weight: normal; 
-        }
-        .pdf-header p { 
-            font-size: 10px; 
-            margin: 2px 0; 
-        }
-        .pdf-section { 
-            margin-bottom: 8px; 
-            padding: 6px; 
-            border: 1px solid #ccc; 
-            page-break-inside: avoid;
-            font-size: 10px;
-        }
-        .pdf-section h3 { 
-            font-size: 12px; 
-            margin: 0 0 5px 0; 
-            font-weight: bold; 
-            color: #2563eb;
-        }
-        .pdf-grid { 
-            display: grid; 
-            grid-template-columns: 1fr 1fr; 
-            gap: 8px; 
-            margin-bottom: 6px;
-        }
-        .pdf-full-width { 
-            grid-column: 1 / -1; 
-        }
-        .pdf-item { 
-            margin-bottom: 3px; 
-        }
-        .pdf-label { 
-            font-weight: bold; 
-            display: inline; 
-        }
-        .pdf-footer { 
-            margin-top: 10px; 
-            text-align: center; 
-            font-size: 9px; 
-            color: #666; 
-            border-top: 1px solid #ccc; 
-            padding-top: 6px; 
-        }
-        .status-badge {
-            display: inline-block;
-            padding: 2px 6px;
-            border-radius: 3px;
-            font-size: 9px;
-            font-weight: bold;
-            color: white;
-        }
-        .status-completed { background-color: #10b981; }
-        .status-pending { background-color: #f59e0b; }
-        .status-rejected { background-color: #ef4444; }
-        @media print {
-            body { -webkit-print-color-adjust: exact; }
-            .pdf-content { transform: scale(0.95); transform-origin: top left; }
-        }
-    </style>
-</head>
-<body>
-    <div class="pdf-content">
-        <div class="pdf-header">
-            <h1>โรงเรียนสา</h1>
-            <h2>เอกสารบันทึกการสอนแทน</h2>
-            <p>เลขที่เอกสาร: ${record.id} | วันที่ออกเอกสาร: ${currentDate}</p>
-            <p>สถานะ: <span class="status-badge ${record.status === 'completed' ? 'status-completed' : record.status === 'rejected' ? 'status-rejected' : 'status-pending'}">${record.status === 'completed' ? 'อนุมัติครบทุกขั้นตอน' : record.status === 'rejected' ? 'ไม่อนุมัติ' : 'อยู่ระหว่างดำเนินการ'}</span></p>
-        </div>
-
-        <div class="pdf-section">
-            <h3>ข้อมูลการมอบหมายงาน</h3>
-            <div class="pdf-grid">
-                <div class="pdf-item"><span class="pdf-label">วันที่สอนแทน:</span> ${record.date}</div>
-                <div class="pdf-item"><span class="pdf-label">เวลา:</span> ${record.time}</div>
-                <div class="pdf-item"><span class="pdf-label">ชั้น/ห้อง:</span> ${record.classRoom}</div>
-                <div class="pdf-item"><span class="pdf-label">วิชา:</span> ${record.subject}</div>
-                <div class="pdf-item"><span class="pdf-label">ครูประจำวิชา:</span> ${record.regularTeacher}</div>
-                <div class="pdf-item"><span class="pdf-label">ครูสอนแทน:</span> ${record.substituteTeacher}</div>
-            </div>
-            <div class="pdf-full-width">
-                <div class="pdf-item"><span class="pdf-label">เนื้อหาที่สอน:</span> ${record.content}</div>
-                <div class="pdf-item"><span class="pdf-label">กิจกรรมการเรียนการสอน:</span> ${record.activities || 'ไม่ระบุ'}</div>
-                <div class="pdf-item"><span class="pdf-label">การบ้าน:</span> ${record.homework || 'ไม่มี'}</div>
-            </div>
-        </div>
-
-        ${record.substituteReport ? `
-        <div class="pdf-section">
-            <h3>รายงานผลการสอนจากครูสอนแทน</h3>
-            <div class="pdf-grid">
-                <div class="pdf-item"><span class="pdf-label">จำนวนนักเรียนที่เข้าเรียน:</span> ${record.substituteReport.attendance}</div>
-                <div class="pdf-item"><span class="pdf-label">วันที่ส่งรายงาน:</span> ${record.substituteReport.submittedAt}</div>
-            </div>
-            <div class="pdf-full-width">
-                <div class="pdf-item"><span class="pdf-label">พฤติกรรมของนักเรียน:</span> ${record.substituteReport.behavior}</div>
-                ${record.substituteReport.observations ? `<div class="pdf-item"><span class="pdf-label">ข้อสังเกตเพิ่มเติม:</span> ${record.substituteReport.observations}</div>` : ''}
-            </div>
-        </div>
-        ` : ''}
-
-        ${(record.headApproval || record.adminApproval) ? `
-        <div class="pdf-section">
-            <h3>สถานะการอนุมัติ</h3>
-            <div class="pdf-grid">
-                ${record.headApproval ? `
-                <div class="pdf-item"><span class="pdf-label">หัวหน้าสาระ:</span> ${record.headApproval === 'approved' ? '✓ อนุมัติ' : '✗ ไม่อนุมัติ'}</div>
-                <div class="pdf-item"><span class="pdf-label">วันที่พิจารณา:</span> ${record.headApprovedAt || record.headRejectedAt || '-'}</div>
-                ` : ''}
-                ${record.adminApproval ? `
-                <div class="pdf-item"><span class="pdf-label">รองกลุ่มบริหาร:</span> ${record.adminApproval === 'approved' ? '✓ อนุมัติ' : '✗ ไม่อนุมัติ'}</div>
-                <div class="pdf-item"><span class="pdf-label">วันที่อนุมัติสุดท้าย:</span> ${record.finalApprovalDate || record.finalRejectionDate || '-'}</div>
-                ` : ''}
-            </div>
-            ${record.headReason ? `<div class="pdf-item"><span class="pdf-label">เหตุผลหัวหน้าสาระ:</span> ${record.headReason}</div>` : ''}
-            ${record.adminReason ? `<div class="pdf-item"><span class="pdf-label">เหตุผลรองกลุ่มบริหาร:</span> ${record.adminReason}</div>` : ''}
-        </div>
-        ` : ''}
-
-        <div class="pdf-footer">
-            <p>เอกสารนี้ออกโดยระบบบันทึกการสอนแทน - โรงเรียนสา</p>
-            <p>ระบบงานเทคโนโลยี | วันที่สร้างเอกสาร: ${currentDate}</p>
-        </div>
-    </div>
-</body>
-</html>`;
-            
-            const printWindow = window.open('', '_blank');
-            if (printWindow) {
-                printWindow.document.write(html);
-                printWindow.document.close();
-                printWindow.onload = function() {
-                    printWindow.print();
-                };
-            } else {
-                showNotification('ไม่สามารถเปิดหน้าต่างพิมพ์ได้ กรุณาอนุญาตการเปิด popup', 'error');
-            }
-        }
-
-        // Event listeners and initialization
-        document.addEventListener('DOMContentLoaded', function() {
-            // User type change handler
-            document.getElementById('userType').addEventListener('change', function() {
-                const passwordField = document.getElementById('passwordField');
-                const teacherNameField = document.getElementById('teacherNameField');
-                
-                if (this.value === 'head' || this.value === 'admin') {
-                    passwordField.classList.remove('hidden');
-                    teacherNameField.classList.add('hidden');
-                } else if (this.value === 'substitute') {
-                    passwordField.classList.add('hidden');
-                    teacherNameField.classList.remove('hidden');
-                } else {
-                    passwordField.classList.add('hidden');
-                    teacherNameField.classList.add('hidden');
-                }
-            });
-
-            // Form submit handler
-            document.getElementById('teacherAssignmentForm').addEventListener('submit', submitTeacherForm);
-
-            // Initialize
-            showSection('menuSection');
-            console.log('ระบบเริ่มต้นเรียบร้อย โหลดข้อมูล:', records.length, 'รายการ');
-        });
-    </script>
-</body>
-</html>
-
+                record.headApproval === 'approved' && !record.substitu
